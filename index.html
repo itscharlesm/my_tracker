@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Money Tracker</title>
+  <link rel="icon" href="data:,">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+  <link href="css/style.css" rel="stylesheet">
+  <link rel="icon" type="image/png" href="css/images/logo.png">
+</head>
+
+<body>
+
+  <!-- Top navbar -->
+  <nav class="navbar navbar-dark sticky-top app-navbar">
+    <div class="container-fluid">
+      <span class="navbar-brand mb-0 h1"><i class="bi bi-wallet2"></i> Money Tracker</span>
+      <span class="text-white-50 small d-none d-sm-inline" id="currencyLabel"></span>
+    </div>
+  </nav>
+
+  <div class="container-fluid pb-5" style="max-width:1100px;">
+
+    <!-- ===================== DASHBOARD ===================== -->
+    <section id="page-dashboard" class="page-section">
+      <div class="d-flex flex-wrap gap-2 align-items-end my-3">
+        <div>
+          <label class="form-label small mb-0">Year</label>
+          <select id="dashYear" class="form-select form-select-sm"></select>
+        </div>
+        <div>
+          <label class="form-label small mb-0">Month</label>
+          <select id="dashMonth" class="form-select form-select-sm"></select>
+        </div>
+        <div>
+          <label class="form-label small mb-0">Week</label>
+          <select id="dashWeek" class="form-select form-select-sm"></select>
+        </div>
+        <div class="ms-auto text-muted small" id="dashPeriodLabel"></div>
+      </div>
+
+      <div class="row g-2 mb-3">
+        <div class="col-6 col-md-3">
+          <div class="card stat-card stat-income h-100">
+            <div class="card-body">
+              <div class="stat-label">Total Income</div>
+              <div class="stat-value" id="statIncome">0</div>
+            </div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="card stat-card stat-expense h-100">
+            <div class="card-body">
+              <div class="stat-label">Total Expenses</div>
+              <div class="stat-value" id="statExpense">0</div>
+            </div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="card stat-card stat-net h-100">
+            <div class="card-body">
+              <div class="stat-label">Net Cashflow</div>
+              <div class="stat-value" id="statNet">0</div>
+            </div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="card stat-card stat-savings h-100">
+            <div class="card-body">
+              <div class="stat-label">Savings Rate</div>
+              <div class="stat-value" id="statSavings">0%</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row g-3 mb-3">
+        <div class="col-12 col-lg-7">
+          <div class="card h-100">
+            <div class="card-body">
+              <h6 class="card-title">Income vs Expenses by Month</h6>
+              <canvas id="chartMonthly" height="200"></canvas>
+            </div>
+          </div>
+        </div>
+        <div class="col-12 col-lg-5">
+          <div class="card h-100">
+            <div class="card-body">
+              <h6 class="card-title">Expenses by Category</h6>
+              <canvas id="chartCategory" height="200"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card mb-3">
+        <div class="card-body">
+          <h6 class="card-title">Accounts</h6>
+          <div class="table-responsive">
+            <table class="table table-sm align-middle mb-0" id="dashAccountsTable">
+              <thead>
+                <tr>
+                  <th>Account</th>
+                  <th class="text-end">Balance</th>
+                  <th>Goal</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== TRANSACTIONS ===================== -->
+    <section id="page-transactions" class="page-section d-none">
+      <div class="d-flex flex-wrap gap-2 align-items-end my-3">
+        <div>
+          <label class="form-label small mb-0">Year</label>
+          <select id="txnFilterYear" class="form-select form-select-sm"></select>
+        </div>
+        <div>
+          <label class="form-label small mb-0">Month</label>
+          <select id="txnFilterMonth" class="form-select form-select-sm"></select>
+        </div>
+        <div class="flex-grow-1">
+          <label class="form-label small mb-0">Search</label>
+          <input id="txnSearch" class="form-control form-control-sm" placeholder="description, category...">
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="openTxnModal()"><i class="bi bi-plus-lg"></i> Add
+          Transaction</button>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-sm table-hover align-middle" id="txnTable">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Type</th>
+              <th>Account</th>
+              <th>Category</th>
+              <th>Description</th>
+              <th class="text-end">Amount</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <nav>
+        <ul class="pagination pagination-sm justify-content-center" id="txnPagination"></ul>
+      </nav>
+    </section>
+
+    <!-- ===================== TRANSFERS ===================== -->
+    <section id="page-transfers" class="page-section d-none">
+      <div class="d-flex justify-content-between align-items-center my-3">
+        <h6 class="mb-0">Transfer & Cashflow History</h6>
+        <button class="btn btn-primary btn-sm" onclick="openTransferModal()"><i class="bi bi-plus-lg"></i> Add
+          Transfer</button>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-sm table-hover align-middle" id="transferTable">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Type</th>
+              <th>From</th>
+              <th>To</th>
+              <th class="text-end">Amount</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ===================== BUDGET ===================== -->
+    <section id="page-budget" class="page-section d-none">
+      <div class="d-flex flex-wrap gap-2 align-items-end my-3">
+        <div>
+          <label class="form-label small mb-0">Year</label>
+          <select id="budgetYear" class="form-select form-select-sm"></select>
+        </div>
+        <div>
+          <label class="form-label small mb-0">Month</label>
+          <select id="budgetMonth" class="form-select form-select-sm"></select>
+        </div>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-sm align-middle" id="budgetTable">
+          <thead>
+            <tr>
+              <th>Category</th>
+              <th style="width:110px">Budget</th>
+              <th class="text-end">Actual</th>
+              <th class="text-end">Remaining</th>
+              <th class="text-end">Used %</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ===================== ACCOUNTS & GOALS ===================== -->
+    <section id="page-accounts" class="page-section d-none">
+      <div class="d-flex justify-content-between align-items-center my-3">
+        <h6 class="mb-0">Accounts, Balances & Goals</h6>
+        <button class="btn btn-primary btn-sm" onclick="openAccountModal()"><i class="bi bi-plus-lg"></i> Add
+          Account</button>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-sm align-middle" id="accountsTable">
+          <thead>
+            <tr>
+              <th>Account</th>
+              <th>Purpose</th>
+              <th class="text-end">Opening</th>
+              <th class="text-end">Current Balance</th>
+              <th>Goal</th>
+              <th style="width:140px">Progress</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ===================== PAYROLL ===================== -->
+    <section id="page-payroll" class="page-section d-none">
+      <div class="d-flex justify-content-between align-items-center my-3">
+        <h6 class="mb-0">Payroll Schedule & Workdays</h6>
+        <button class="btn btn-primary btn-sm" onclick="openPayrollModal()"><i class="bi bi-plus-lg"></i> Add Pay
+          Date</button>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-sm align-middle" id="payrollTable">
+          <thead>
+            <tr>
+              <th>Pay Date</th>
+              <th>Half</th>
+              <th>Exp. Workdays</th>
+              <th>Actual Workdays</th>
+              <th class="text-end">Expected Salary</th>
+              <th class="text-end">Actual (from entries)</th>
+              <th class="text-end">Variance</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ===================== ATOME ===================== -->
+    <section id="page-atome" class="page-section d-none">
+      <h6 class="my-3">Atome Credit Card</h6>
+      <div class="row g-2 mb-3">
+        <div class="col-6 col-md-3">
+          <div class="card">
+            <div class="card-body">
+              <div class="stat-label">Credit Limit</div>
+              <div class="stat-value" id="atomeLimit">0</div>
+            </div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="card">
+            <div class="card-body">
+              <div class="stat-label">Outstanding</div>
+              <div class="stat-value" id="atomeOutstanding">0</div>
+            </div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="card">
+            <div class="card-body">
+              <div class="stat-label">Available Credit</div>
+              <div class="stat-value" id="atomeAvailable">0</div>
+            </div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="card">
+            <div class="card-body">
+              <div class="stat-label">Utilization</div>
+              <div class="stat-value" id="atomeUtilization">0%</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-sm align-middle" id="atomeTable">
+          <thead>
+            <tr>
+              <th>Statement Date</th>
+              <th>Due Date</th>
+              <th class="text-end">Outstanding</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ===================== SETTINGS ===================== -->
+    <section id="page-settings" class="page-section d-none">
+      <h6 class="my-3">Settings & Dropdown Lists</h6>
+      <div class="card mb-3">
+        <div class="card-body">
+          <h6 class="card-title">Backup / Sync between devices</h6>
+          <p class="text-muted small">Your data lives in this browser only. Export a backup file and import it on your
+            other device to keep them in sync.</p>
+          <button class="btn btn-outline-primary btn-sm me-2" onclick="exportBackup()"><i class="bi bi-download"></i>
+            Export backup (.json)</button>
+          <label class="btn btn-outline-secondary btn-sm mb-0">
+            <i class="bi bi-upload"></i> Import backup
+            <input type="file" accept=".json" class="d-none" onchange="importBackup(event)">
+          </label>
+        </div>
+      </div>
+
+      <div class="card mb-3">
+        <div class="card-body">
+          <h6 class="card-title">General</h6>
+          <div class="row g-2">
+            <div class="col-6 col-md-3">
+              <label class="form-label small mb-0">Currency</label>
+              <input id="settingCurrency" class="form-control form-control-sm">
+            </div>
+            <div class="col-6 col-md-3">
+              <label class="form-label small mb-0">Atome statement day</label>
+              <input id="settingAtomeStmt" type="number" min="1" max="28" class="form-control form-control-sm">
+            </div>
+            <div class="col-6 col-md-3">
+              <label class="form-label small mb-0">Atome due day</label>
+              <input id="settingAtomeDue" type="number" min="1" max="28" class="form-control form-control-sm">
+            </div>
+          </div>
+          <button class="btn btn-primary btn-sm mt-2" onclick="saveGeneralSettings()">Save</button>
+        </div>
+      </div>
+
+      <div class="card mb-3">
+        <div class="card-body">
+          <h6 class="card-title">Dropdown lists</h6>
+          <p class="text-muted small mb-2">One item per line. These populate the choices in the Add/Edit forms.</p>
+          <div class="row g-3" id="dropdownEditors"></div>
+          <button class="btn btn-primary btn-sm mt-2" onclick="saveDropdowns()">Save lists</button>
+        </div>
+      </div>
+
+      <div class="card border-danger mb-3">
+        <div class="card-body">
+          <h6 class="card-title text-danger">Danger zone</h6>
+          <button class="btn btn-outline-danger btn-sm" onclick="resetToSeed()">Reset app to original imported
+            data</button>
+          <button class="btn btn-outline-danger btn-sm" onclick="wipeAll()">Erase all data</button>
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+  <!-- Bottom nav (mobile-friendly, works on desktop too) -->
+  <nav class="navbar fixed-bottom bottom-nav">
+    <div class="container-fluid px-0">
+      <div class="btn-group w-100" role="group">
+        <button class="btn nav-btn active" data-page="dashboard"><i
+            class="bi bi-speedometer2"></i><span>Dashboard</span></button>
+        <button class="btn nav-btn" data-page="transactions"><i class="bi bi-list-ul"></i><span>Entries</span></button>
+        <button class="btn nav-btn" data-page="transfers"><i
+            class="bi bi-arrow-left-right"></i><span>Transfers</span></button>
+        <button class="btn nav-btn" data-page="budget"><i class="bi bi-pie-chart"></i><span>Budget</span></button>
+        <button class="btn nav-btn" data-page="accounts"><i class="bi bi-bank"></i><span>Accounts</span></button>
+        <button class="btn nav-btn" data-page="payroll"><i class="bi bi-cash-stack"></i><span>Payroll</span></button>
+        <button class="btn nav-btn" data-page="atome"><i class="bi bi-credit-card"></i><span>Atome</span></button>
+        <button class="btn nav-btn" data-page="settings"><i class="bi bi-gear"></i><span>Settings</span></button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ===================== MODALS ===================== -->
+
+  <!-- Transaction modal -->
+  <div class="modal fade" id="txnModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Transaction</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="txnId">
+          <div class="row g-2">
+            <div class="col-6">
+              <label class="form-label small mb-0">Date</label>
+              <input type="date" id="txnDate" class="form-control">
+            </div>
+            <div class="col-6">
+              <label class="form-label small mb-0">Type</label>
+              <select id="txnType" class="form-select" onchange="onTxnTypeChange()">
+                <option>Expense</option>
+                <option>Income</option>
+              </select>
+            </div>
+            <div class="col-6">
+              <label class="form-label small mb-0">Account</label>
+              <select id="txnAccount" class="form-select"></select>
+            </div>
+            <div class="col-6">
+              <label class="form-label small mb-0">Category</label>
+              <select id="txnCategory" class="form-select"></select>
+            </div>
+            <div class="col-6" id="txnSubcatWrap">
+              <label class="form-label small mb-0">Subcategory</label>
+              <select id="txnSubcategory" class="form-select"></select>
+            </div>
+            <div class="col-6">
+              <label class="form-label small mb-0">Amount</label>
+              <input type="number" step="0.01" id="txnAmount" class="form-control">
+            </div>
+            <div class="col-12">
+              <label class="form-label small mb-0">Description</label>
+              <input id="txnDescription" class="form-control">
+            </div>
+            <div class="col-12">
+              <label class="form-label small mb-0">Note</label>
+              <input id="txnNote" class="form-control">
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-outline-danger me-auto d-none" id="txnDeleteBtn" onclick="deleteTxnFromModal()"><i
+              class="bi bi-trash"></i> Delete</button>
+          <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button class="btn btn-primary" onclick="saveTxnFromModal()">Save</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Transfer modal -->
+  <div class="modal fade" id="transferModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Transfer</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="trfId">
+          <div class="row g-2">
+            <div class="col-6">
+              <label class="form-label small mb-0">Date</label>
+              <input type="date" id="trfDate" class="form-control">
+            </div>
+            <div class="col-6">
+              <label class="form-label small mb-0">Transfer Type</label>
+              <select id="trfType" class="form-select"></select>
+            </div>
+            <div class="col-6">
+              <label class="form-label small mb-0">From Account</label>
+              <select id="trfFrom" class="form-select"></select>
+            </div>
+            <div class="col-6">
+              <label class="form-label small mb-0">To Account</label>
+              <select id="trfTo" class="form-select"></select>
+            </div>
+            <div class="col-6">
+              <label class="form-label small mb-0">Amount</label>
+              <input type="number" step="0.01" id="trfAmount" class="form-control">
+            </div>
+            <div class="col-12">
+              <label class="form-label small mb-0">Note</label>
+              <input id="trfNote" class="form-control">
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-outline-danger me-auto d-none" id="trfDeleteBtn" onclick="deleteTransferFromModal()"><i
+              class="bi bi-trash"></i> Delete</button>
+          <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button class="btn btn-primary" onclick="saveTransferFromModal()">Save</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Account modal -->
+  <div class="modal fade" id="accountModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Account</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="acctId">
+          <div class="row g-2">
+            <div class="col-12">
+              <label class="form-label small mb-0">Account name</label>
+              <input id="acctName" class="form-control">
+            </div>
+            <div class="col-12">
+              <label class="form-label small mb-0">Purpose</label>
+              <input id="acctPurpose" class="form-control">
+            </div>
+            <div class="col-6">
+              <label class="form-label small mb-0">Opening balance</label>
+              <input type="number" step="0.01" id="acctOpening" class="form-control">
+            </div>
+            <div class="col-6">
+              <label class="form-label small mb-0">Goal (optional)</label>
+              <input type="number" step="0.01" id="acctGoal" class="form-control">
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-outline-danger me-auto d-none" id="acctDeleteBtn" onclick="deleteAccountFromModal()"><i
+              class="bi bi-trash"></i> Delete</button>
+          <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button class="btn btn-primary" onclick="saveAccountFromModal()">Save</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Payroll modal -->
+  <div class="modal fade" id="payrollModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Pay Date</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="prlId">
+          <div class="row g-2">
+            <div class="col-12">
+              <label class="form-label small mb-0">Pay date</label>
+              <input type="date" id="prlDate" class="form-control">
+            </div>
+            <div class="col-6">
+              <label class="form-label small mb-0">Expected workdays</label>
+              <input type="number" step="0.5" id="prlExpectedDays" class="form-control">
+            </div>
+            <div class="col-6">
+              <label class="form-label small mb-0">Actual workdays</label>
+              <input type="number" step="0.5" id="prlActualDays" class="form-control">
+            </div>
+            <div class="col-12">
+              <label class="form-label small mb-0">Expected regular salary</label>
+              <input type="number" step="0.01" id="prlExpectedSalary" class="form-control">
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-outline-danger me-auto d-none" id="prlDeleteBtn" onclick="deletePayrollFromModal()"><i
+              class="bi bi-trash"></i> Delete</button>
+          <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button class="btn btn-primary" onclick="savePayrollFromModal()">Save</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+  <script src="js/seed-data.js"></script>
+  <script src="js/app.js"></script>
+</body>
+
+</html>
