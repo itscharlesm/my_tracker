@@ -350,7 +350,7 @@ function filteredTransactions() {
   return getTransactions()
     .filter(t => year === 'All' || String(deriveYear(t.date)) === String(year))
     .filter(t => month === 'All' || deriveMonthName(t.date) === month)
-    .filter(t => !q || [t.description, t.category, t.subcategory, t.account, t.note].join(' ').toLowerCase().includes(q))
+    .filter(t => !q || [t.type, t.description, t.category, t.subcategory, t.account, t.note].join(' ').toLowerCase().includes(q))
     .sort((a, b) => b.date.localeCompare(a.date) || b.id - a.id);
 }
 
