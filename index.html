@@ -16,9 +16,15 @@
 
   <!-- Top navbar -->
   <nav class="navbar navbar-dark sticky-top app-navbar">
-    <div class="container-fluid">
-      <span class="navbar-brand mb-0 h1"><i class="bi bi-wallet2"></i> Money Tracker</span>
-      <span class="text-white-50 small d-none d-sm-inline" id="currencyLabel"></span>
+    <div class="container-fluid d-flex justify-content-between align-items-center">
+      <span class="navbar-brand mb-0 h1">
+        <i class="bi bi-wallet2"></i>
+        <span>
+          <span class="brand-eyebrow">Ledger</span>
+          Money Tracker
+        </span>
+      </span>
+      <span class="text-white-50 small" id="currencyLabel"></span>
     </div>
   </nav>
 
@@ -26,51 +32,51 @@
 
     <!-- ===================== DASHBOARD ===================== -->
     <section id="page-dashboard" class="page-section">
-      <div class="d-flex flex-wrap gap-2 align-items-end my-3">
-        <div>
-          <label class="form-label small mb-0">Year</label>
-          <select id="dashYear" class="form-select form-select-sm"></select>
+
+      <!-- Passbook hero summary -->
+      <div class="passbook-hero">
+        <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
+          <div>
+            <span class="ph-eyebrow">Net cashflow</span>
+            <div class="ph-net" id="statNet">0</div>
+          </div>
+          <button type="button" class="chip-btn" data-bs-toggle="modal" data-bs-target="#dashFilterModal"
+            style="background:rgba(255,255,255,.14); border-color:rgba(255,255,255,.35); color:#fff;">
+            <i class="bi bi-sliders" style="color:#fff;"></i>
+            <span id="dashPeriodLabel">Loading…</span>
+          </button>
         </div>
-        <div>
-          <label class="form-label small mb-0">Month</label>
-          <select id="dashMonth" class="form-select form-select-sm"></select>
+        <div class="ph-stitch"></div>
+        <div class="ph-row">
+          <div class="ph-item"><span class="ph-dot" style="background:#8fe0b8;"></span>Track income, expenses &amp;
+            savings below</div>
         </div>
-        <div>
-          <label class="form-label small mb-0">Week</label>
-          <select id="dashWeek" class="form-select form-select-sm"></select>
-        </div>
-        <div class="ms-auto text-muted small" id="dashPeriodLabel"></div>
       </div>
 
-      <div class="row g-2 mb-3">
-        <div class="col-6 col-md-3">
+      <div class="row g-2 my-3">
+        <div class="col-4">
           <div class="card stat-card stat-income h-100">
             <div class="card-body">
-              <div class="stat-label">Total Income</div>
+              <div class="stat-icon"><i class="bi bi-arrow-down-left"></i></div>
+              <div class="stat-label">Income</div>
               <div class="stat-value" id="statIncome">0</div>
             </div>
           </div>
         </div>
-        <div class="col-6 col-md-3">
+        <div class="col-4">
           <div class="card stat-card stat-expense h-100">
             <div class="card-body">
-              <div class="stat-label">Total Expenses</div>
+              <div class="stat-icon"><i class="bi bi-arrow-up-right"></i></div>
+              <div class="stat-label">Expenses</div>
               <div class="stat-value" id="statExpense">0</div>
             </div>
           </div>
         </div>
-        <div class="col-6 col-md-3">
-          <div class="card stat-card stat-net h-100">
-            <div class="card-body">
-              <div class="stat-label">Net Cashflow</div>
-              <div class="stat-value" id="statNet">0</div>
-            </div>
-          </div>
-        </div>
-        <div class="col-6 col-md-3">
+        <div class="col-4">
           <div class="card stat-card stat-savings h-100">
             <div class="card-body">
-              <div class="stat-label">Savings Rate</div>
+              <div class="stat-icon"><i class="bi bi-piggy-bank"></i></div>
+              <div class="stat-label">Savings</div>
               <div class="stat-value" id="statSavings">0%</div>
             </div>
           </div>
@@ -81,7 +87,7 @@
         <div class="col-12">
           <div class="card h-100">
             <div class="card-body">
-              <h6 class="card-title">Income vs Expenses by Month</h6>
+              <h6 class="card-title"><i class="bi bi-bar-chart-line"></i> Income vs Expenses by Month</h6>
               <canvas id="chartMonthly" height="200"></canvas>
             </div>
           </div>
@@ -92,7 +98,7 @@
         <div class="col-12 col-lg-6">
           <div class="card h-100">
             <div class="card-body">
-              <h6 class="card-title">Expenses by Category</h6>
+              <h6 class="card-title"><i class="bi bi-pie-chart"></i> Expenses by Category</h6>
               <canvas id="chartCategory" height="200"></canvas>
             </div>
           </div>
@@ -100,7 +106,7 @@
         <div class="col-12 col-lg-6">
           <div class="card h-100">
             <div class="card-body">
-              <h6 class="card-title">Income by Category</h6>
+              <h6 class="card-title"><i class="bi bi-pie-chart-fill"></i> Income by Category</h6>
               <canvas id="chartIncomeCategory" height="200"></canvas>
             </div>
           </div>
@@ -109,7 +115,7 @@
 
       <div class="card mb-3">
         <div class="card-body">
-          <h6 class="card-title">Accounts</h6>
+          <h6 class="card-title"><i class="bi bi-bank2"></i> Accounts</h6>
           <div class="table-responsive">
             <table class="table table-sm align-middle mb-0" id="dashAccountsTable">
               <thead>
@@ -126,257 +132,449 @@
       </div>
     </section>
 
+    <!-- Dashboard filter modal -->
+    <div class="modal fade" id="dashFilterModal" tabindex="-1">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title"><i class="bi bi-sliders"></i> Dashboard period</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <p class="modal-lead">Choose the year, month, and week you want the dashboard to summarize.</p>
+            <div class="row g-2">
+              <div class="col-4">
+                <label class="form-label small mb-0">Year</label>
+                <select id="dashYear" class="form-select form-select-sm"></select>
+              </div>
+              <div class="col-4">
+                <label class="form-label small mb-0">Month</label>
+                <select id="dashMonth" class="form-select form-select-sm"></select>
+              </div>
+              <div class="col-4">
+                <label class="form-label small mb-0">Week</label>
+                <select id="dashWeek" class="form-select form-select-sm"></select>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-primary w-100" data-bs-dismiss="modal">Apply</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- ===================== TRANSACTIONS ===================== -->
     <section id="page-transactions" class="page-section d-none">
-      <div class="d-flex flex-wrap gap-2 align-items-end my-3">
-        <div>
-          <label class="form-label small mb-0">Year</label>
-          <select id="txnFilterYear" class="form-select form-select-sm"></select>
-        </div>
-        <div>
-          <label class="form-label small mb-0">Month</label>
-          <select id="txnFilterMonth" class="form-select form-select-sm"></select>
-        </div>
-        <div class="flex-grow-1">
-          <label class="form-label small mb-0">Search</label>
-          <input id="txnSearch" class="form-control form-control-sm" placeholder="description, category...">
-        </div>
+      <div class="section-toolbar">
+        <h6 class="section-heading me-auto"><span class="icon-badge"><i class="bi bi-list-ul"></i></span> Entries</h6>
+        <button type="button" class="chip-btn" data-bs-toggle="modal" data-bs-target="#txnFilterModal">
+          <i class="bi bi-sliders"></i> Filter
+        </button>
         <button class="btn btn-primary btn-sm" onclick="openTxnModal()"><i class="bi bi-plus-lg"></i> Add
           Transaction</button>
       </div>
-      <div class="table-responsive">
-        <table class="table table-sm table-hover align-middle" id="txnTable">
-          <thead>
-            <tr>
-              <th>Date</th>
-              <th>Type</th>
-              <th>Account</th>
-              <th>Category</th>
-              <th>Description</th>
-              <th class="text-end">Amount</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
+      <div class="card">
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-sm table-hover align-middle mb-0" id="txnTable">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Type</th>
+                  <th>Account</th>
+                  <th>Category</th>
+                  <th>Description</th>
+                  <th class="text-end">Amount</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
       </div>
       <nav>
-        <ul class="pagination pagination-sm justify-content-center" id="txnPagination"></ul>
+        <ul class="pagination pagination-sm justify-content-center mt-3" id="txnPagination"></ul>
       </nav>
     </section>
 
+    <!-- Transactions filter modal -->
+    <div class="modal fade" id="txnFilterModal" tabindex="-1">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title"><i class="bi bi-sliders"></i> Filter entries</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <div class="row g-2">
+              <div class="col-6">
+                <label class="form-label small mb-0">Year</label>
+                <select id="txnFilterYear" class="form-select form-select-sm"></select>
+              </div>
+              <div class="col-6">
+                <label class="form-label small mb-0">Month</label>
+                <select id="txnFilterMonth" class="form-select form-select-sm"></select>
+              </div>
+              <div class="col-12">
+                <label class="form-label small mb-0">Search</label>
+                <input id="txnSearch" class="form-control form-control-sm" placeholder="description, category...">
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-primary w-100" data-bs-dismiss="modal">Apply</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- ===================== TRANSFERS ===================== -->
     <section id="page-transfers" class="page-section d-none">
-      <div class="d-flex justify-content-between align-items-center my-3">
-        <h6 class="mb-0">Transfer & Cashflow History</h6>
+      <div class="section-toolbar">
+        <h6 class="section-heading me-auto"><span class="icon-badge"><i class="bi bi-arrow-left-right"></i></span>
+          Transfer &amp; Cashflow History</h6>
         <button class="btn btn-primary btn-sm" onclick="openTransferModal()"><i class="bi bi-plus-lg"></i> Add
           Transfer</button>
       </div>
-      <div class="table-responsive">
-        <table class="table table-sm table-hover align-middle" id="transferTable">
-          <thead>
-            <tr>
-              <th>Date</th>
-              <th>Type</th>
-              <th>From</th>
-              <th>To</th>
-              <th class="text-end">Amount</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
+      <div class="card">
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-sm table-hover align-middle mb-0" id="transferTable">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Type</th>
+                  <th>From</th>
+                  <th>To</th>
+                  <th class="text-end">Amount</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
       </div>
     </section>
 
     <!-- ===================== BUDGET ===================== -->
     <section id="page-budget" class="page-section d-none">
-      <div class="d-flex flex-wrap gap-2 align-items-end my-3">
-        <div>
-          <label class="form-label small mb-0">Year</label>
-          <select id="budgetYear" class="form-select form-select-sm"></select>
-        </div>
-        <div>
-          <label class="form-label small mb-0">Month</label>
-          <select id="budgetMonth" class="form-select form-select-sm"></select>
-        </div>
+      <div class="section-toolbar">
+        <h6 class="section-heading me-auto"><span class="icon-badge"><i class="bi bi-pie-chart"></i></span> Budget</h6>
+        <button type="button" class="chip-btn" data-bs-toggle="modal" data-bs-target="#budgetFilterModal">
+          <i class="bi bi-sliders"></i> Period
+        </button>
       </div>
-      <div class="table-responsive">
-        <table class="table table-sm align-middle" id="budgetTable">
-          <thead>
-            <tr>
-              <th>Category</th>
-              <th style="width:110px">Budget</th>
-              <th class="text-end">Actual</th>
-              <th class="text-end">Remaining</th>
-              <th class="text-end">Used %</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
+      <div class="card">
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-sm align-middle mb-0" id="budgetTable">
+              <thead>
+                <tr>
+                  <th>Category</th>
+                  <th style="width:110px">Budget</th>
+                  <th class="text-end">Actual</th>
+                  <th class="text-end">Remaining</th>
+                  <th class="text-end">Used %</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
       </div>
     </section>
 
+    <!-- Budget filter modal -->
+    <div class="modal fade" id="budgetFilterModal" tabindex="-1">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title"><i class="bi bi-sliders"></i> Budget period</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <div class="row g-2">
+              <div class="col-6">
+                <label class="form-label small mb-0">Year</label>
+                <select id="budgetYear" class="form-select form-select-sm"></select>
+              </div>
+              <div class="col-6">
+                <label class="form-label small mb-0">Month</label>
+                <select id="budgetMonth" class="form-select form-select-sm"></select>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-primary w-100" data-bs-dismiss="modal">Apply</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- ===================== ACCOUNTS & GOALS ===================== -->
     <section id="page-accounts" class="page-section d-none">
-      <div class="d-flex justify-content-between align-items-center my-3">
-        <h6 class="mb-0">Accounts, Balances & Goals</h6>
+      <div class="section-toolbar">
+        <h6 class="section-heading me-auto"><span class="icon-badge"><i class="bi bi-bank"></i></span> Accounts,
+          Balances &amp; Goals</h6>
         <button class="btn btn-primary btn-sm" onclick="openAccountModal()"><i class="bi bi-plus-lg"></i> Add
           Account</button>
       </div>
-      <div class="table-responsive">
-        <table class="table table-sm align-middle" id="accountsTable">
-          <thead>
-            <tr>
-              <th>Account</th>
-              <th>Purpose</th>
-              <th class="text-end">Opening</th>
-              <th class="text-end">Current Balance</th>
-              <th>Goal</th>
-              <th style="width:140px">Progress</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
+      <div class="card">
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-sm align-middle mb-0" id="accountsTable">
+              <thead>
+                <tr>
+                  <th>Account</th>
+                  <th>Purpose</th>
+                  <th class="text-end">Opening</th>
+                  <th class="text-end">Current Balance</th>
+                  <th>Goal</th>
+                  <th style="width:140px">Progress</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
       </div>
     </section>
 
     <!-- ===================== PAYROLL ===================== -->
     <section id="page-payroll" class="page-section d-none">
-      <div class="d-flex justify-content-between align-items-center my-3">
-        <h6 class="mb-0">Payroll Schedule & Workdays</h6>
+      <div class="section-toolbar">
+        <h6 class="section-heading me-auto"><span class="icon-badge"><i class="bi bi-cash-stack"></i></span> Payroll
+          Schedule &amp; Workdays</h6>
         <button class="btn btn-primary btn-sm" onclick="openPayrollModal()"><i class="bi bi-plus-lg"></i> Add Pay
           Date</button>
       </div>
-      <div class="table-responsive">
-        <table class="table table-sm align-middle" id="payrollTable">
-          <thead>
-            <tr>
-              <th>Pay Date</th>
-              <th>Half</th>
-              <th>Exp. Workdays</th>
-              <th>Actual Workdays</th>
-              <th class="text-end">Expected Salary</th>
-              <th class="text-end">Actual (from entries)</th>
-              <th class="text-end">Variance</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
+      <div class="card">
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-sm align-middle mb-0" id="payrollTable">
+              <thead>
+                <tr>
+                  <th>Pay Date</th>
+                  <th>Half</th>
+                  <th>Exp. Workdays</th>
+                  <th>Actual Workdays</th>
+                  <th class="text-end">Expected Salary</th>
+                  <th class="text-end">Actual (from entries)</th>
+                  <th class="text-end">Variance</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
       </div>
     </section>
 
     <!-- ===================== ATOME ===================== -->
     <section id="page-atome" class="page-section d-none">
-      <h6 class="my-3">Atome Credit Card</h6>
+      <div class="section-toolbar">
+        <h6 class="section-heading me-auto"><span class="icon-badge"><i class="bi bi-credit-card"></i></span> Atome
+          Credit Card</h6>
+      </div>
       <div class="row g-2 mb-3">
         <div class="col-6 col-md-3">
-          <div class="card">
+          <div class="card h-100">
             <div class="card-body">
+              <span class="atome-card-icon mb-2 d-inline-flex"><i class="bi bi-shield-check"></i></span>
               <div class="stat-label">Credit Limit</div>
               <div class="stat-value" id="atomeLimit">0</div>
             </div>
           </div>
         </div>
         <div class="col-6 col-md-3">
-          <div class="card">
+          <div class="card h-100">
             <div class="card-body">
+              <span class="atome-card-icon mb-2 d-inline-flex"><i class="bi bi-receipt"></i></span>
               <div class="stat-label">Outstanding</div>
               <div class="stat-value" id="atomeOutstanding">0</div>
             </div>
           </div>
         </div>
         <div class="col-6 col-md-3">
-          <div class="card">
+          <div class="card h-100">
             <div class="card-body">
+              <span class="atome-card-icon mb-2 d-inline-flex"><i class="bi bi-wallet2"></i></span>
               <div class="stat-label">Available Credit</div>
               <div class="stat-value" id="atomeAvailable">0</div>
             </div>
           </div>
         </div>
         <div class="col-6 col-md-3">
-          <div class="card">
+          <div class="card h-100">
             <div class="card-body">
+              <span class="atome-card-icon mb-2 d-inline-flex"><i class="bi bi-speedometer2"></i></span>
               <div class="stat-label">Utilization</div>
               <div class="stat-value" id="atomeUtilization">0%</div>
             </div>
           </div>
         </div>
       </div>
-      <div class="table-responsive">
-        <table class="table table-sm align-middle" id="atomeTable">
-          <thead>
-            <tr>
-              <th>Statement Date</th>
-              <th>Due Date</th>
-              <th class="text-end">Outstanding</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
+      <div class="card">
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-sm align-middle mb-0" id="atomeTable">
+              <thead>
+                <tr>
+                  <th>Statement Date</th>
+                  <th>Due Date</th>
+                  <th class="text-end">Outstanding</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
       </div>
     </section>
 
     <!-- ===================== SETTINGS ===================== -->
     <section id="page-settings" class="page-section d-none">
-      <h6 class="my-3">Settings & Dropdown Lists</h6>
-      <div class="card mb-3">
-        <div class="card-body">
-          <h6 class="card-title">Backup / Sync between devices</h6>
-          <p class="text-muted small">Your data lives in this browser only. Export a backup file and import it on your
-            other device to keep them in sync.</p>
-          <button class="btn btn-outline-primary btn-sm me-2" onclick="exportBackup()"><i class="bi bi-download"></i>
-            Export backup (.json)</button>
-          <label class="btn btn-outline-secondary btn-sm mb-0">
-            <i class="bi bi-upload"></i> Import backup
-            <input type="file" accept=".json" class="d-none" onchange="importBackup(event)">
-          </label>
-        </div>
+      <div class="section-toolbar">
+        <h6 class="section-heading me-auto"><span class="icon-badge"><i class="bi bi-gear"></i></span> Settings</h6>
       </div>
 
-      <div class="card mb-3">
-        <div class="card-body">
-          <h6 class="card-title">General</h6>
-          <div class="row g-2">
-            <div class="col-6 col-md-3">
-              <label class="form-label small mb-0">Currency</label>
-              <input id="settingCurrency" class="form-control form-control-sm">
-            </div>
-            <div class="col-6 col-md-3">
-              <label class="form-label small mb-0">Atome statement day</label>
-              <input id="settingAtomeStmt" type="number" min="1" max="28" class="form-control form-control-sm">
-            </div>
-            <div class="col-6 col-md-3">
-              <label class="form-label small mb-0">Atome due day</label>
-              <input id="settingAtomeDue" type="number" min="1" max="28" class="form-control form-control-sm">
+      <button type="button" class="menu-row" data-bs-toggle="modal" data-bs-target="#backupModal">
+        <span class="menu-icon"><i class="bi bi-cloud-arrow-up"></i></span>
+        <span class="menu-text">
+          <span class="menu-title d-block">Backup &amp; Sync</span>
+          <span class="menu-sub">Export or import a backup file between devices</span>
+        </span>
+        <i class="bi bi-chevron-right"></i>
+      </button>
+
+      <button type="button" class="menu-row" data-bs-toggle="modal" data-bs-target="#generalSettingsModal">
+        <span class="menu-icon"><i class="bi bi-sliders2"></i></span>
+        <span class="menu-text">
+          <span class="menu-title d-block">General</span>
+          <span class="menu-sub">Currency and Atome statement/due days</span>
+        </span>
+        <i class="bi bi-chevron-right"></i>
+      </button>
+
+      <button type="button" class="menu-row" data-bs-toggle="modal" data-bs-target="#dropdownModal">
+        <span class="menu-icon"><i class="bi bi-list-check"></i></span>
+        <span class="menu-text">
+          <span class="menu-title d-block">Dropdown Lists</span>
+          <span class="menu-sub">Edit the choices used in Add/Edit forms</span>
+        </span>
+        <i class="bi bi-chevron-right"></i>
+      </button>
+
+      <button type="button" class="menu-row danger" data-bs-toggle="modal" data-bs-target="#dangerModal">
+        <span class="menu-icon"><i class="bi bi-exclamation-triangle"></i></span>
+        <span class="menu-text">
+          <span class="menu-title d-block">Danger Zone</span>
+          <span class="menu-sub">Reset to seed data or erase everything</span>
+        </span>
+        <i class="bi bi-chevron-right"></i>
+      </button>
+    </section>
+
+    <!-- Backup modal -->
+    <div class="modal fade" id="backupModal" tabindex="-1">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title"><i class="bi bi-cloud-arrow-up"></i> Backup &amp; Sync</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <p class="modal-lead">Your data lives in this browser only. Export a backup file and import it on your
+              other device to keep them in sync.</p>
+            <div class="d-flex flex-wrap gap-2">
+              <button class="btn btn-outline-primary btn-sm" onclick="exportBackup()"><i class="bi bi-download"></i>
+                Export backup (.json)</button>
+              <label class="btn btn-outline-secondary btn-sm mb-0">
+                <i class="bi bi-upload"></i> Import backup
+                <input type="file" accept=".json" class="d-none" onchange="importBackup(event)">
+              </label>
             </div>
           </div>
-          <button class="btn btn-primary btn-sm mt-2" onclick="saveGeneralSettings()">Save</button>
         </div>
       </div>
+    </div>
 
-      <div class="card mb-3">
-        <div class="card-body">
-          <h6 class="card-title">Dropdown lists</h6>
-          <p class="text-muted small mb-2">One item per line. These populate the choices in the Add/Edit forms.</p>
-          <div class="row g-3" id="dropdownEditors"></div>
-          <button class="btn btn-primary btn-sm mt-2" onclick="saveDropdowns()">Save lists</button>
+    <!-- General settings modal -->
+    <div class="modal fade" id="generalSettingsModal" tabindex="-1">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title"><i class="bi bi-sliders2"></i> General</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <div class="row g-2">
+              <div class="col-12">
+                <label class="form-label small mb-0">Currency</label>
+                <input id="settingCurrency" class="form-control form-control-sm">
+              </div>
+              <div class="col-6">
+                <label class="form-label small mb-0">Atome statement day</label>
+                <input id="settingAtomeStmt" type="number" min="1" max="28" class="form-control form-control-sm">
+              </div>
+              <div class="col-6">
+                <label class="form-label small mb-0">Atome due day</label>
+                <input id="settingAtomeDue" type="number" min="1" max="28" class="form-control form-control-sm">
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-primary w-100" onclick="saveGeneralSettings()">Save</button>
+          </div>
         </div>
       </div>
+    </div>
 
-      <div class="card border-danger mb-3">
-        <div class="card-body">
-          <h6 class="card-title text-danger">Danger zone</h6>
-          <button class="btn btn-outline-danger btn-sm" onclick="resetToSeed()">Reset app to original imported
-            data</button>
-          <button class="btn btn-outline-danger btn-sm" onclick="wipeAll()">Erase all data</button>
+    <!-- Dropdown lists modal -->
+    <div class="modal fade" id="dropdownModal" tabindex="-1">
+      <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title"><i class="bi bi-list-check"></i> Dropdown Lists</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <p class="modal-lead mb-2">One item per line. These populate the choices in the Add/Edit forms.</p>
+            <div class="row g-3" id="dropdownEditors"></div>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-primary w-100" onclick="saveDropdowns()">Save lists</button>
+          </div>
         </div>
       </div>
-    </section>
+    </div>
+
+    <!-- Danger zone modal -->
+    <div class="modal fade" id="dangerModal" tabindex="-1">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title"><i class="bi bi-exclamation-triangle"></i> Danger Zone</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <p class="modal-lead">These actions cannot be undone. Make sure you have a backup exported first.</p>
+            <div class="d-grid gap-2">
+              <button class="btn btn-outline-danger btn-sm" onclick="resetToSeed()">Reset app to original imported
+                data</button>
+              <button class="btn btn-outline-danger btn-sm" onclick="wipeAll()">Erase all data</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
 
   </div>
 
@@ -398,14 +596,14 @@
     </div>
   </nav>
 
-  <!-- ===================== MODALS ===================== -->
+  <!-- ===================== MODALS (record editors) ===================== -->
 
   <!-- Transaction modal -->
   <div class="modal fade" id="txnModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title">Transaction</h5>
+          <h5 class="modal-title"><i class="bi bi-receipt-cutoff"></i> Transaction</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body">
@@ -463,7 +661,7 @@
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title">Transfer</h5>
+          <h5 class="modal-title"><i class="bi bi-arrow-left-right"></i> Transfer</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body">
@@ -510,7 +708,7 @@
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title">Account</h5>
+          <h5 class="modal-title"><i class="bi bi-bank"></i> Account</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body">
@@ -549,7 +747,7 @@
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title">Pay Date</h5>
+          <h5 class="modal-title"><i class="bi bi-cash-stack"></i> Pay Date</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body">
@@ -579,6 +777,35 @@
           <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
           <button class="btn btn-primary" onclick="savePayrollFromModal()">Save</button>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Generic confirm modal (replaces window.confirm everywhere) -->
+  <div class="modal fade" id="confirmModal" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title"><i class="bi bi-question-circle"></i> Please confirm</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <p class="modal-lead mb-0" id="confirmModalBody"></p>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button class="btn btn-danger" id="confirmModalActionBtn">Confirm</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast (replaces window.alert everywhere) -->
+  <div class="toast-container position-fixed bottom-0 end-0 p-3" style="margin-bottom:70px;">
+    <div id="appToast" class="toast text-bg-primary" role="alert">
+      <div class="d-flex">
+        <div class="toast-body" id="appToastBody"></div>
+        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
       </div>
     </div>
   </div>

@@ -136,6 +136,36 @@ function showPage(page) {
   render[page] && render[page]();
 }
 
+/* ----------------------------------------------------- confirm & toast
+   Shared UI helpers so every confirmation and notice in the app uses an
+   in-app Bootstrap modal / toast instead of the browser's native
+   confirm()/alert() popups. Every call site below passes the exact same
+   message and, on confirm, runs the exact same code that used to run
+   immediately after the old `if (!confirm(...)) return;` line. */
+function showConfirmModal(message, onConfirm, opts) {
+  opts = opts || {};
+  document.getElementById('confirmModalBody').textContent = message;
+  const btn = document.getElementById('confirmModalActionBtn');
+  btn.textContent = opts.confirmText || 'Confirm';
+  btn.className = 'btn ' + (opts.danger === false ? 'btn-primary' : 'btn-danger');
+  const modalEl = document.getElementById('confirmModal');
+  const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+  const handler = () => {
+    modal.hide();
+    btn.removeEventListener('click', handler);
+    onConfirm();
+  };
+  btn.addEventListener('click', handler);
+  modal.show();
+}
+function showToast(message, variant) {
+  const toastEl = document.getElementById('appToast');
+  document.getElementById('appToastBody').textContent = message;
+  toastEl.classList.remove('text-bg-primary', 'text-bg-danger', 'text-bg-success');
+  toastEl.classList.add('text-bg-' + (variant || 'primary'));
+  bootstrap.Toast.getOrCreateInstance(toastEl).show();
+}
+
 /* --------------------------------------------------------- dropdown UI */
 
 function fillSelect(sel, items, selected) {
@@ -214,11 +244,11 @@ function renderDashboard() {
     type: 'bar',
     data: {
       labels: MONTHS.map(m => m.slice(0, 3)), datasets: [
-        { label: 'Income', data: incomeByMonth, backgroundColor: '#2f8f5e' },
-        { label: 'Expenses', data: expenseByMonth, backgroundColor: '#c0473a' },
+        { label: 'Income', data: incomeByMonth, backgroundColor: '#2f8f5e', borderRadius: 4 },
+        { label: 'Expenses', data: expenseByMonth, backgroundColor: '#bf4632', borderRadius: 4 },
       ]
     },
-    options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
+    options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { font: { family: "'Inter', sans-serif" }, usePointStyle: true, boxWidth: 8 } } }, scales: { x: { grid: { display: false } }, y: { grid: { color: '#e8ddc0' } } } }
   });
 
   // category doughnut for selected period
@@ -234,14 +264,15 @@ function renderDashboard() {
     data: {
       labels: catLabels, datasets: [{
         data: catLabels.map(c => byCat[c]),
-        backgroundColor: ['#2f6f5e', '#c0473a', '#a3752f', '#4a7ab5', '#8a5ca8', '#c98a3e', '#4f9e94', '#b25a8c', '#7a8a3e', '#5e6b8a']
+        backgroundColor: ['#1f6f57', '#bf4632', '#cf8a34', '#3f6fa8', '#8a5ca8', '#c98a3e', '#4f9e94', '#b25a8c', '#7a8a3e', '#5e6b8a'],
+        borderColor: '#fffdf9', borderWidth: 2
       }]
     },
     options: {
-      responsive: true, plugins: {
+      responsive: true, cutout: '62%', plugins: {
         legend: {
           position: 'right', labels: {
-            boxWidth: 12, font: { size: 10 }, generateLabels: (chart) => {
+            boxWidth: 12, font: { size: 10, family: "'Inter', sans-serif" }, generateLabels: (chart) => {
               const ds = chart.data.datasets[0];
               return chart.data.labels.map((label, i) => ({
                 text: `${label}: ${fmt(ds.data[i])}`,
@@ -273,14 +304,15 @@ function renderDashboard() {
     data: {
       labels: incCatLabels, datasets: [{
         data: incCatLabels.map(c => byIncomeCat[c]),
-        backgroundColor: ['#2f8f5e', '#4a7ab5', '#c98a3e', '#8a5ca8', '#4f9e94', '#b25a8c', '#7a8a3e', '#5e6b8a', '#c0473a', '#a3752f']
+        backgroundColor: ['#2f8f5e', '#3f6fa8', '#cf8a34', '#8a5ca8', '#4f9e94', '#b25a8c', '#7a8a3e', '#5e6b8a', '#bf4632', '#a3752f'],
+        borderColor: '#fffdf9', borderWidth: 2
       }]
     },
     options: {
-      responsive: true, plugins: {
+      responsive: true, cutout: '62%', plugins: {
         legend: {
           position: 'right', labels: {
-            boxWidth: 12, font: { size: 10 }, generateLabels: (chart) => {
+            boxWidth: 12, font: { size: 10, family: "'Inter', sans-serif" }, generateLabels: (chart) => {
               const ds = chart.data.datasets[0];
               return chart.data.labels.map((label, i) => ({
                 text: `${label}: ${fmt(ds.data[i])}`,
@@ -405,7 +437,7 @@ function saveTxnFromModal() {
     amount: parseFloat(document.getElementById('txnAmount').value) || 0,
     note: document.getElementById('txnNote').value,
   };
-  if (!obj.date || !obj.amount) { alert('Date and amount are required.'); return; }
+  if (!obj.date || !obj.amount) { showToast('Date and amount are required.', 'danger'); return; }
   const list = getTransactions();
   if (id) {
     const idx = list.findIndex(x => x.id === Number(id));
@@ -419,10 +451,11 @@ function saveTxnFromModal() {
 }
 function deleteTxnFromModal() {
   const id = Number(document.getElementById('txnId').value);
-  if (!confirm('Delete this transaction?')) return;
-  set(LS_KEYS.transactions, getTransactions().filter(x => x.id !== id));
-  bootstrap.Modal.getInstance(document.getElementById('txnModal')).hide();
-  renderTransactions();
+  showConfirmModal('Delete this transaction?', () => {
+    set(LS_KEYS.transactions, getTransactions().filter(x => x.id !== id));
+    bootstrap.Modal.getInstance(document.getElementById('txnModal')).hide();
+    renderTransactions();
+  }, { danger: true, confirmText: 'Delete' });
 }
 
 /* ================================================================
@@ -468,7 +501,7 @@ function saveTransferFromModal() {
     amount: parseFloat(document.getElementById('trfAmount').value) || 0,
     note: document.getElementById('trfNote').value,
   };
-  if (!obj.date || !obj.amount) { alert('Date and amount are required.'); return; }
+  if (!obj.date || !obj.amount) { showToast('Date and amount are required.', 'danger'); return; }
   const list = getTransfers();
   if (id) {
     const idx = list.findIndex(x => x.id === Number(id));
@@ -482,10 +515,11 @@ function saveTransferFromModal() {
 }
 function deleteTransferFromModal() {
   const id = Number(document.getElementById('trfId').value);
-  if (!confirm('Delete this transfer?')) return;
-  set(LS_KEYS.transfers, getTransfers().filter(x => x.id !== id));
-  bootstrap.Modal.getInstance(document.getElementById('transferModal')).hide();
-  renderTransfers();
+  showConfirmModal('Delete this transfer?', () => {
+    set(LS_KEYS.transfers, getTransfers().filter(x => x.id !== id));
+    bootstrap.Modal.getInstance(document.getElementById('transferModal')).hide();
+    renderTransfers();
+  }, { danger: true, confirmText: 'Delete' });
 }
 
 /* ================================================================
@@ -587,7 +621,7 @@ function saveAccountFromModal() {
     opening: parseFloat(document.getElementById('acctOpening').value) || 0,
     goal: document.getElementById('acctGoal').value ? parseFloat(document.getElementById('acctGoal').value) : null,
   };
-  if (!obj.account) { alert('Account name is required.'); return; }
+  if (!obj.account) { showToast('Account name is required.', 'danger'); return; }
   const list = getAccounts();
   if (id) {
     const idx = list.findIndex(x => x.id === Number(id));
@@ -604,10 +638,11 @@ function saveAccountFromModal() {
 }
 function deleteAccountFromModal() {
   const id = Number(document.getElementById('acctId').value);
-  if (!confirm('Delete this account? Existing transactions referencing it will stay as-is.')) return;
-  set(LS_KEYS.accounts, getAccounts().filter(x => x.id !== id));
-  bootstrap.Modal.getInstance(document.getElementById('accountModal')).hide();
-  renderAccounts();
+  showConfirmModal('Delete this account? Existing transactions referencing it will stay as-is.', () => {
+    set(LS_KEYS.accounts, getAccounts().filter(x => x.id !== id));
+    bootstrap.Modal.getInstance(document.getElementById('accountModal')).hide();
+    renderAccounts();
+  }, { danger: true, confirmText: 'Delete' });
 }
 
 /* ================================================================
@@ -660,7 +695,7 @@ function savePayrollFromModal() {
     actualWorkdays: parseFloat(document.getElementById('prlActualDays').value) || 0,
     expectedSalary: parseFloat(document.getElementById('prlExpectedSalary').value) || 0,
   };
-  if (!obj.payDate) { alert('Pay date is required.'); return; }
+  if (!obj.payDate) { showToast('Pay date is required.', 'danger'); return; }
   const list = getPayroll();
   if (id) {
     const idx = list.findIndex(x => x.id === Number(id));
@@ -674,10 +709,11 @@ function savePayrollFromModal() {
 }
 function deletePayrollFromModal() {
   const id = Number(document.getElementById('prlId').value);
-  if (!confirm('Delete this pay date?')) return;
-  set(LS_KEYS.payroll, getPayroll().filter(x => x.id !== id));
-  bootstrap.Modal.getInstance(document.getElementById('payrollModal')).hide();
-  renderPayroll();
+  showConfirmModal('Delete this pay date?', () => {
+    set(LS_KEYS.payroll, getPayroll().filter(x => x.id !== id));
+    bootstrap.Modal.getInstance(document.getElementById('payrollModal')).hide();
+    renderPayroll();
+  }, { danger: true, confirmText: 'Delete' });
 }
 
 /* ================================================================
@@ -743,7 +779,7 @@ function saveGeneralSettings() {
   s.atomeDueDay = parseInt(document.getElementById('settingAtomeDue').value) || 20;
   set(LS_KEYS.settings, s);
   document.getElementById('currencyLabel').textContent = s.currency || '';
-  alert('Saved.');
+  showToast('Saved.', 'success');
 }
 function saveDropdowns() {
   const dd = getDropdowns();
@@ -751,7 +787,7 @@ function saveDropdowns() {
     dd[key] = document.getElementById('dd_' + key).value.split('\n').map(s => s.trim()).filter(Boolean);
   });
   set(LS_KEYS.dropdowns, dd);
-  alert('Saved.');
+  showToast('Saved.', 'success');
 }
 function exportBackup() {
   const backup = {
@@ -772,37 +808,40 @@ function importBackup(evt) {
   reader.onload = () => {
     try {
       const data = JSON.parse(reader.result);
-      if (!confirm('This will replace all data currently in this browser with the backup file. Continue?')) return;
-      set(LS_KEYS.transactions, data.transactions || []);
-      set(LS_KEYS.transfers, data.transfers || []);
-      set(LS_KEYS.accounts, data.accounts || []);
-      set(LS_KEYS.budget, data.budget || []);
-      set(LS_KEYS.payroll, data.payroll || []);
-      set(LS_KEYS.dropdowns, data.dropdowns || {});
-      set(LS_KEYS.settings, data.settings || {});
-      localStorage.setItem(LS_KEYS.initialized, '1');
-      alert('Backup imported.');
-      location.reload();
-    } catch (e) { alert('Could not read that file: ' + e.message); }
+      showConfirmModal('This will replace all data currently in this browser with the backup file. Continue?', () => {
+        set(LS_KEYS.transactions, data.transactions || []);
+        set(LS_KEYS.transfers, data.transfers || []);
+        set(LS_KEYS.accounts, data.accounts || []);
+        set(LS_KEYS.budget, data.budget || []);
+        set(LS_KEYS.payroll, data.payroll || []);
+        set(LS_KEYS.dropdowns, data.dropdowns || {});
+        set(LS_KEYS.settings, data.settings || {});
+        localStorage.setItem(LS_KEYS.initialized, '1');
+        showToast('Backup imported.', 'success');
+        setTimeout(() => location.reload(), 600);
+      }, { danger: true, confirmText: 'Replace data' });
+    } catch (e) { showToast('Could not read that file: ' + e.message, 'danger'); }
   };
   reader.readAsText(file);
 }
 function resetToSeed() {
-  if (!confirm('This erases everything you added and restores the data originally imported from your spreadsheet. Continue?')) return;
-  localStorage.removeItem(LS_KEYS.initialized);
-  Object.values(LS_KEYS).forEach(k => localStorage.removeItem(k));
-  loadAll();
-  location.reload();
+  showConfirmModal('This erases everything you added and restores the data originally imported from your spreadsheet. Continue?', () => {
+    localStorage.removeItem(LS_KEYS.initialized);
+    Object.values(LS_KEYS).forEach(k => localStorage.removeItem(k));
+    loadAll();
+    location.reload();
+  }, { danger: true, confirmText: 'Reset' });
 }
 function wipeAll() {
-  if (!confirm('This erases ALL data in this browser permanently. Continue?')) return;
-  Object.values(LS_KEYS).forEach(k => localStorage.removeItem(k));
-  set(LS_KEYS.transactions, []); set(LS_KEYS.transfers, []); set(LS_KEYS.accounts, []);
-  set(LS_KEYS.budget, []); set(LS_KEYS.payroll, []);
-  set(LS_KEYS.dropdowns, { transactionType: ['Income', 'Expense'], account: [], expenseCategory: [], incomeCategory: [], incomeSubcategory: [], transferType: [] });
-  set(LS_KEYS.settings, { currency: '', atomeStatementDay: 10, atomeDueDay: 20 });
-  localStorage.setItem(LS_KEYS.initialized, '1');
-  location.reload();
+  showConfirmModal('This erases ALL data in this browser permanently. Continue?', () => {
+    Object.values(LS_KEYS).forEach(k => localStorage.removeItem(k));
+    set(LS_KEYS.transactions, []); set(LS_KEYS.transfers, []); set(LS_KEYS.accounts, []);
+    set(LS_KEYS.budget, []); set(LS_KEYS.payroll, []);
+    set(LS_KEYS.dropdowns, { transactionType: ['Income', 'Expense'], account: [], expenseCategory: [], incomeCategory: [], incomeSubcategory: [], transferType: [] });
+    set(LS_KEYS.settings, { currency: '', atomeStatementDay: 10, atomeDueDay: 20 });
+    localStorage.setItem(LS_KEYS.initialized, '1');
+    location.reload();
+  }, { danger: true, confirmText: 'Erase everything' });
 }
 
 /* ================================================================
