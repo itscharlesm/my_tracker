@@ -113,6 +113,16 @@ function fmt(n) {
 }
 function fmtPct(n) { return (Number(n) * 100).toFixed(1) + '%'; }
 
+// Format a local Date as YYYY-MM-DD using its LOCAL fields — unlike
+// toISOString(), this never converts through UTC, so the date you see
+// here always matches the date you get from new Date(y, m, d) / typed input.
+function toLocalISODate(d) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
 /* current balance of one account, mirrors Accounts&Goals!G */
 function accountBalance(acctName) {
   const opening = Number((getAccounts().find(a => sameText(a.account, acctName)) || {}).opening) || 0;
@@ -745,7 +755,7 @@ function renderAtome() {
     if (outstanding === 0) { status = 'PAID / NO BALANCE'; cls = 'badge-ok'; }
     else if (today > due) { status = 'PAST DUE'; cls = 'badge-over'; }
     else if (today >= stmt) { status = 'STATEMENT READY'; cls = 'badge-watch'; }
-    rows.push(`<tr><td>${stmt.toISOString().slice(0, 10)}</td><td>${due.toISOString().slice(0, 10)}</td>
+    rows.push(`<tr><td>${toLocalISODate(stmt)}</td><td>${toLocalISODate(due)}</td>
       <td class="text-end">${fmt(outstanding)}</td><td><span class="badge ${cls}">${status}</span></td></tr>`);
   }
   document.querySelector('#atomeTable tbody').innerHTML = rows.join('');
