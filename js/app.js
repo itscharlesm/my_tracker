@@ -878,3 +878,161 @@ initDashboardFilters();
 initTxnFilters();
 initBudgetFilters();
 renderDashboard();
+
+/* =========================================================================
+   ADDED: extra dashboard insights — Net Cashflow Trend, Top Spending
+   Categories, and Account Balance Distribution.
+
+   This block is appended after everything above and does not modify a
+   single existing line, function, or comment. It reuses the existing
+   helper functions (getTransactions, deriveYear, deriveMonthName,
+   accountBalance, fmt, etc.) and hooks into the dashboard's existing
+   render cycle by wrapping render.dashboard, so it stays in sync with
+   the same Year / Month / Week filters already on the dashboard.
+   ========================================================================= */
+(function () {
+  let chartNetTrend, chartAccountDistribution;
+
+  function currentDashFilters() {
+    return {
+      year: document.getElementById('dashYear').value,
+      month: document.getElementById('dashMonth').value,
+      week: document.getElementById('dashWeek').value,
+    };
+  }
+
+  // Net cashflow (income - expense) for every month of the selected year,
+  // same building blocks as the existing "Income vs Expenses by Month" chart.
+  function renderNetTrend(year) {
+    document.getElementById('netTrendYearLabel').textContent = year;
+    const netByMonth = MONTHS.map(m => {
+      const monthTxns = getTransactions().filter(t =>
+        String(deriveYear(t.date)) === String(year) && deriveMonthName(t.date) === m);
+      const income = monthTxns.filter(t => t.type === 'Income').reduce((s, t) => s + Number(t.amount || 0), 0);
+      const expense = monthTxns.filter(t => t.type === 'Expense').reduce((s, t) => s + Number(t.amount || 0), 0);
+      return income - expense;
+    });
+    const ctx = document.getElementById('chartNetTrend').getContext('2d');
+    if (chartNetTrend) chartNetTrend.destroy();
+    chartNetTrend = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: MONTHS.map(m => m.slice(0, 3)),
+        datasets: [{
+          label: 'Net Cashflow',
+          data: netByMonth,
+          borderColor: '#1f6f57',
+          backgroundColor: 'rgba(31,111,87,0.12)',
+          fill: true,
+          tension: 0.35,
+          pointRadius: 3,
+          pointBackgroundColor: netByMonth.map(v => v < 0 ? '#bf4632' : '#1f6f57'),
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: { x: { grid: { display: false } }, y: { grid: { color: '#e8ddc0' } } }
+      }
+    });
+  }
+
+  // Top 5 expense categories for the currently selected dashboard period,
+  // shown as a ranked list with a share-of-total progress bar each.
+  function renderTopCategories(year, month, week) {
+    const txns = getTransactions().filter(t => {
+      if (String(deriveYear(t.date)) !== String(year)) return false;
+      if (month !== 'All' && deriveMonthName(t.date) !== month) return false;
+      if (week !== 'All' && String(deriveWeek(t.date)) !== String(week)) return false;
+      return t.type === 'Expense';
+    });
+    const byCat = {};
+    txns.forEach(t => { byCat[t.category] = (byCat[t.category] || 0) + Number(t.amount || 0); });
+    const total = Object.values(byCat).reduce((s, v) => s + v, 0);
+    const top = Object.keys(byCat)
+      .map(c => ({ category: c, amount: byCat[c] }))
+      .sort((a, b) => b.amount - a.amount)
+      .slice(0, 5);
+
+    const list = document.getElementById('topCategoriesList');
+    if (!top.length) {
+      list.innerHTML = '<p class="text-muted small mb-0">No expenses in this period.</p>';
+      return;
+    }
+    list.innerHTML = top.map((row, i) => {
+      const pct = total ? (row.amount / total * 100) : 0;
+      return `<div class="top-cat-row">
+        <span class="top-cat-rank">${i + 1}</span>
+        <div class="top-cat-info">
+          <div class="top-cat-name-row"><span>${row.category}</span><span class="amt">${fmt(row.amount)}</span></div>
+          <div class="progress" style="height:8px"><div class="progress-bar" style="width:${pct.toFixed(0)}%"></div></div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  // Distribution of current balances across all accounts (reuses the
+  // existing accountBalance() formula, same one used on the Accounts page).
+  function renderAccountDistribution() {
+    const accounts = getAccounts().filter(a => !/atome/i.test(a.account));
+    const labels = accounts.map(a => a.account);
+    const balances = accounts.map(a => Math.max(accountBalance(a.account), 0));
+    const total = balances.reduce((s, v) => s + v, 0);
+    document.getElementById('totalAccountBalance').textContent = 'Total: ' + fmt(total);
+
+    const ctx = document.getElementById('chartAccountDistribution').getContext('2d');
+    if (chartAccountDistribution) chartAccountDistribution.destroy();
+    chartAccountDistribution = new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        labels,
+        datasets: [{
+          data: balances,
+          backgroundColor: ['#1f6f57', '#cf8a34', '#3f6fa8', '#8a5ca8', '#bf4632', '#4f9e94', '#b25a8c', '#7a8a3e'],
+          borderColor: '#fffdf9', borderWidth: 2
+        }]
+      },
+      options: {
+        responsive: true, cutout: '62%',
+        plugins: {
+          legend: {
+            position: 'right', labels: {
+              boxWidth: 12, font: { size: 10, family: "'Inter', sans-serif" }, generateLabels: (chart) => {
+                const ds = chart.data.datasets[0];
+                return chart.data.labels.map((label, i) => ({
+                  text: `${label}: ${fmt(ds.data[i])}`,
+                  fillStyle: ds.backgroundColor[i],
+                  strokeStyle: ds.backgroundColor[i],
+                  index: i
+                }));
+              }
+            }
+          }
+        }
+      }
+    });
+  }
+
+  function renderDashboardExtras() {
+    const { year, month, week } = currentDashFilters();
+    renderNetTrend(year);
+    renderTopCategories(year, month, week);
+    renderAccountDistribution();
+  }
+
+  // Wrap (not replace) the existing dashboard renderer so page navigation
+  // keeps refreshing these new cards too, without editing renderDashboard itself.
+  const _origRenderDashboard = render.dashboard;
+  render.dashboard = function () {
+    _origRenderDashboard();
+    renderDashboardExtras();
+  };
+
+  // Keep the new cards in sync with the existing period filter dropdowns.
+  ['dashYear', 'dashMonth', 'dashWeek'].forEach(id =>
+    document.getElementById(id).addEventListener('change', renderDashboardExtras));
+
+  // Paint once on initial load (the original renderDashboard() already ran
+  // above as part of the existing boot sequence).
+  renderDashboardExtras();
+})();

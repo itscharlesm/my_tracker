@@ -868,3 +868,54 @@ textarea:focus-visible {
     font-size: 1.7rem;
   }
 }
+
+/* =========================================================================
+   ADDED: Top Spending Categories mini leaderboard (new dashboard section).
+   Purely additive rules — nothing above this block was changed.
+   ========================================================================= */
+.top-cat-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.top-cat-row:last-child {
+  margin-bottom: 0;
+}
+
+.top-cat-rank {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--brand-light);
+  color: var(--brand-dark);
+  font-size: .7rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-family: var(--font-mono);
+}
+
+.top-cat-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.top-cat-name-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: .82rem;
+  font-weight: 600;
+  color: var(--ink);
+  margin-bottom: 5px;
+}
+
+.top-cat-name-row .amt {
+  font-family: var(--font-mono);
+  color: var(--expense);
+  flex-shrink: 0;
+}
