@@ -1,4 +1,4 @@
-index.html:
+index:
 <!DOCTYPE html>
 <html lang="en">
 
@@ -133,6 +133,39 @@ index.html:
           </div>
         </div>
       </div>
+
+      <!-- ===== ADDED: extra dashboard insights (does not modify anything above) ===== -->
+      <div class="row g-3 mb-3">
+        <div class="col-12">
+          <div class="card h-100">
+            <div class="card-body">
+              <h6 class="card-title"><i class="bi bi-graph-up-arrow"></i> Net Cashflow Trend (<span id="netTrendYearLabel"></span>)</h6>
+              <canvas id="chartNetTrend" height="180"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row g-3 mb-3">
+        <div class="col-12 col-lg-6">
+          <div class="card h-100">
+            <div class="card-body">
+              <h6 class="card-title"><i class="bi bi-trophy"></i> Top Spending Categories</h6>
+              <div id="topCategoriesList"></div>
+            </div>
+          </div>
+        </div>
+        <div class="col-12 col-lg-6">
+          <div class="card h-100">
+            <div class="card-body">
+              <h6 class="card-title"><i class="bi bi-bank2"></i> Account Balance Distribution</h6>
+              <canvas id="chartAccountDistribution" height="200"></canvas>
+              <div class="text-end fw-semibold mt-2" id="totalAccountBalance">Total: 0</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- ===== END ADDED ===== -->
     </section>
 
     <!-- Dashboard filter modal -->
@@ -821,7 +854,7 @@ index.html:
 
 </html>
 
-style.css:
+style:
 @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500;600&display=swap');
 
 /* =========================================================================
@@ -1691,6 +1724,57 @@ textarea:focus-visible {
   .passbook-hero .ph-net {
     font-size: 1.7rem;
   }
+}
+
+/* =========================================================================
+   ADDED: Top Spending Categories mini leaderboard (new dashboard section).
+   Purely additive rules — nothing above this block was changed.
+   ========================================================================= */
+.top-cat-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.top-cat-row:last-child {
+  margin-bottom: 0;
+}
+
+.top-cat-rank {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--brand-light);
+  color: var(--brand-dark);
+  font-size: .7rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-family: var(--font-mono);
+}
+
+.top-cat-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.top-cat-name-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: .82rem;
+  font-weight: 600;
+  color: var(--ink);
+  margin-bottom: 5px;
+}
+
+.top-cat-name-row .amt {
+  font-family: var(--font-mono);
+  color: var(--expense);
+  flex-shrink: 0;
 }
 
 app.js:
@@ -2575,6 +2659,164 @@ initTxnFilters();
 initBudgetFilters();
 renderDashboard();
 
-seed-data:
+/* =========================================================================
+   ADDED: extra dashboard insights — Net Cashflow Trend, Top Spending
+   Categories, and Account Balance Distribution.
+
+   This block is appended after everything above and does not modify a
+   single existing line, function, or comment. It reuses the existing
+   helper functions (getTransactions, deriveYear, deriveMonthName,
+   accountBalance, fmt, etc.) and hooks into the dashboard's existing
+   render cycle by wrapping render.dashboard, so it stays in sync with
+   the same Year / Month / Week filters already on the dashboard.
+   ========================================================================= */
+(function () {
+  let chartNetTrend, chartAccountDistribution;
+
+  function currentDashFilters() {
+    return {
+      year: document.getElementById('dashYear').value,
+      month: document.getElementById('dashMonth').value,
+      week: document.getElementById('dashWeek').value,
+    };
+  }
+
+  // Net cashflow (income - expense) for every month of the selected year,
+  // same building blocks as the existing "Income vs Expenses by Month" chart.
+  function renderNetTrend(year) {
+    document.getElementById('netTrendYearLabel').textContent = year;
+    const netByMonth = MONTHS.map(m => {
+      const monthTxns = getTransactions().filter(t =>
+        String(deriveYear(t.date)) === String(year) && deriveMonthName(t.date) === m);
+      const income = monthTxns.filter(t => t.type === 'Income').reduce((s, t) => s + Number(t.amount || 0), 0);
+      const expense = monthTxns.filter(t => t.type === 'Expense').reduce((s, t) => s + Number(t.amount || 0), 0);
+      return income - expense;
+    });
+    const ctx = document.getElementById('chartNetTrend').getContext('2d');
+    if (chartNetTrend) chartNetTrend.destroy();
+    chartNetTrend = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: MONTHS.map(m => m.slice(0, 3)),
+        datasets: [{
+          label: 'Net Cashflow',
+          data: netByMonth,
+          borderColor: '#1f6f57',
+          backgroundColor: 'rgba(31,111,87,0.12)',
+          fill: true,
+          tension: 0.35,
+          pointRadius: 3,
+          pointBackgroundColor: netByMonth.map(v => v < 0 ? '#bf4632' : '#1f6f57'),
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: { x: { grid: { display: false } }, y: { grid: { color: '#e8ddc0' } } }
+      }
+    });
+  }
+
+  // Top 5 expense categories for the currently selected dashboard period,
+  // shown as a ranked list with a share-of-total progress bar each.
+  function renderTopCategories(year, month, week) {
+    const txns = getTransactions().filter(t => {
+      if (String(deriveYear(t.date)) !== String(year)) return false;
+      if (month !== 'All' && deriveMonthName(t.date) !== month) return false;
+      if (week !== 'All' && String(deriveWeek(t.date)) !== String(week)) return false;
+      return t.type === 'Expense';
+    });
+    const byCat = {};
+    txns.forEach(t => { byCat[t.category] = (byCat[t.category] || 0) + Number(t.amount || 0); });
+    const total = Object.values(byCat).reduce((s, v) => s + v, 0);
+    const top = Object.keys(byCat)
+      .map(c => ({ category: c, amount: byCat[c] }))
+      .sort((a, b) => b.amount - a.amount)
+      .slice(0, 5);
+
+    const list = document.getElementById('topCategoriesList');
+    if (!top.length) {
+      list.innerHTML = '<p class="text-muted small mb-0">No expenses in this period.</p>';
+      return;
+    }
+    list.innerHTML = top.map((row, i) => {
+      const pct = total ? (row.amount / total * 100) : 0;
+      return `<div class="top-cat-row">
+        <span class="top-cat-rank">${i + 1}</span>
+        <div class="top-cat-info">
+          <div class="top-cat-name-row"><span>${row.category}</span><span class="amt">${fmt(row.amount)}</span></div>
+          <div class="progress" style="height:8px"><div class="progress-bar" style="width:${pct.toFixed(0)}%"></div></div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  // Distribution of current balances across all accounts (reuses the
+  // existing accountBalance() formula, same one used on the Accounts page).
+  function renderAccountDistribution() {
+    const accounts = getAccounts().filter(a => !/atome/i.test(a.account));
+    const labels = accounts.map(a => a.account);
+    const balances = accounts.map(a => Math.max(accountBalance(a.account), 0));
+    const total = balances.reduce((s, v) => s + v, 0);
+    document.getElementById('totalAccountBalance').textContent = 'Total: ' + fmt(total);
+
+    const ctx = document.getElementById('chartAccountDistribution').getContext('2d');
+    if (chartAccountDistribution) chartAccountDistribution.destroy();
+    chartAccountDistribution = new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        labels,
+        datasets: [{
+          data: balances,
+          backgroundColor: ['#1f6f57', '#cf8a34', '#3f6fa8', '#8a5ca8', '#bf4632', '#4f9e94', '#b25a8c', '#7a8a3e'],
+          borderColor: '#fffdf9', borderWidth: 2
+        }]
+      },
+      options: {
+        responsive: true, cutout: '62%',
+        plugins: {
+          legend: {
+            position: 'right', labels: {
+              boxWidth: 12, font: { size: 10, family: "'Inter', sans-serif" }, generateLabels: (chart) => {
+                const ds = chart.data.datasets[0];
+                return chart.data.labels.map((label, i) => ({
+                  text: `${label}: ${fmt(ds.data[i])}`,
+                  fillStyle: ds.backgroundColor[i],
+                  strokeStyle: ds.backgroundColor[i],
+                  index: i
+                }));
+              }
+            }
+          }
+        }
+      }
+    });
+  }
+
+  function renderDashboardExtras() {
+    const { year, month, week } = currentDashFilters();
+    renderNetTrend(year);
+    renderTopCategories(year, month, week);
+    renderAccountDistribution();
+  }
+
+  // Wrap (not replace) the existing dashboard renderer so page navigation
+  // keeps refreshing these new cards too, without editing renderDashboard itself.
+  const _origRenderDashboard = render.dashboard;
+  render.dashboard = function () {
+    _origRenderDashboard();
+    renderDashboardExtras();
+  };
+
+  // Keep the new cards in sync with the existing period filter dropdowns.
+  ['dashYear', 'dashMonth', 'dashWeek'].forEach(id =>
+    document.getElementById(id).addEventListener('change', renderDashboardExtras));
+
+  // Paint once on initial load (the original renderDashboard() already ran
+  // above as part of the existing boot sequence).
+  renderDashboardExtras();
+})();
+
+seed-data.js:
 // Auto-generated from My_Tracker.xlsx — this is your existing data, loaded once into localStorage on first run.
 const SEED_DATA = {"transactions": [{"date": "2026-07-31", "type": "Expense", "account": "Cash", "category": "Food", "subcategory": "", "description": "Coke Contribution", "amount": 20.0, "note": ""}, {"date": "2026-07-31", "type": "Expense", "account": "Atome (Expenses)", "category": "Load", "subcategory": "", "description": "", "amount": 249.0, "note": ""}, {"date": "2026-07-31", "type": "Expense", "account": "Atome (Expenses)", "category": "Date", "subcategory": "", "description": "Grocery", "amount": 503.9, "note": ""}, {"date": "2026-07-31", "type": "Expense", "account": "Atome (Expenses)", "category": "Gas", "subcategory": "", "description": "", "amount": 418.18, "note": ""}, {"date": "2026-07-31", "type": "Income", "account": "Hello Money (Cashflow)", "category": "Work", "subcategory": "Regular Salary", "description": "", "amount": 7800.0, "note": ""}, {"date": "2026-07-31", "type": "Income", "account": "Hello Money (Cashflow)", "category": "Work", "subcategory": "Incentives", "description": "5,831 Student Population - CMC", "amount": 11662.0, "note": ""}, {"date": "2026-07-31", "type": "Income", "account": "Cash", "category": "Work", "subcategory": "Refund", "description": "Gas Allowance", "amount": 100.0, "note": ""}, {"date": "2026-07-31", "type": "Expense", "account": "Hello Money (Cashflow)", "category": "Date", "subcategory": "", "description": "Cebu Ticket", "amount": 1000.0, "note": ""}, {"date": "2026-08-01", "type": "Expense", "account": "Cash", "category": "Food", "subcategory": "", "description": "Bread", "amount": 25.0, "note": ""}, {"date": "2026-08-01", "type": "Expense", "account": "Cash", "category": "Food", "subcategory": "", "description": "", "amount": 25.0, "note": ""}, {"date": "2026-08-02", "type": "Expense", "account": "Cash", "category": "Medicine", "subcategory": "", "description": "Cough", "amount": 138.0, "note": ""}, {"date": "2026-08-02", "type": "Income", "account": "Cash", "category": "Work", "subcategory": "Sideline", "description": "Microsoft Office Activation", "amount": 500.0, "note": ""}, {"date": "2026-08-02", "type": "Expense", "account": "Cash", "category": "Food", "subcategory": "", "description": "", "amount": 20.0, "note": ""}, {"date": "2026-08-02", "type": "Expense", "account": "Cash", "category": "Food", "subcategory": "", "description": "", "amount": 15.0, "note": ""}, {"date": "2026-08-03", "type": "Income", "account": "GCash (E-WALLET)", "category": "Work", "subcategory": "Sideline", "description": "", "amount": 168.0, "note": ""}, {"date": "2026-08-03", "type": "Income", "account": "MariBank (SAVINGS)", "category": "Bank", "subcategory": "", "description": "", "amount": 0.36, "note": ""}, {"date": "2026-08-03", "type": "Expense", "account": "Cash", "category": "Food", "subcategory": "", "description": "", "amount": 30.0, "note": ""}, {"date": "2026-08-03", "type": "Expense", "account": "GCash (E-WALLET)", "category": "Date", "subcategory": "", "description": "Snacks", "amount": 165.0, "note": ""}, {"date": "2026-08-03", "type": "Expense", "account": "Cash", "category": "Food", "subcategory": "", "description": "", "amount": 300.0, "note": ""}, {"date": "2026-08-03", "type": "Expense", "account": "Cash", "category": "Food", "subcategory": "", "description": "", "amount": 20.0, "note": ""}, {"date": "2026-08-04", "type": "Expense", "account": "Cash", "category": "Food", "subcategory": "", "description": "", "amount": 50.0, "note": ""}, {"date": "2026-08-04", "type": "Expense", "account": "Cash", "category": "Personal", "subcategory": "", "description": "Haircut", "amount": 150.0, "note": ""}, {"date": "2026-08-04", "type": "Expense", "account": "Cash", "category": "Grocery", "subcategory": "", "description": "Soap", "amount": 25.0, "note": ""}, {"date": "2026-08-04", "type": "Expense", "account": "Cash", "category": "Food", "subcategory": "", "description": "", "amount": 4.0, "note": ""}, {"date": "2026-08-04", "type": "Expense", "account": "Cash", "category": "Transportation", "subcategory": "", "description": "", "amount": 13.0, "note": ""}, {"date": "2026-08-04", "type": "Expense", "account": "Cash", "category": "Personal", "subcategory": "", "description": "Watch Size Adjustment", "amount": 50.0, "note": ""}, {"date": "2026-08-04", "type": "Expense", "account": "Cash", "category": "Transportation", "subcategory": "", "description": "", "amount": 22.0, "note": ""}, {"date": "2026-08-04", "type": "Income", "account": "Cash", "category": "Work", "subcategory": "Refund", "description": "", "amount": 50.0, "note": ""}, {"date": "2026-08-05", "type": "Income", "account": "Cash", "category": "Family", "subcategory": "", "description": "", "amount": 50.0, "note": ""}, {"date": "2026-08-05", "type": "Expense", "account": "Atome (EXPENSES)", "category": "Gas", "subcategory": "", "description": "", "amount": 342.02, "note": ""}, {"date": "2026-08-05", "type": "Expense", "account": "Cash", "category": "Laundry", "subcategory": "", "description": "", "amount": 160.0, "note": ""}, {"date": "2026-08-05", "type": "Expense", "account": "Cash", "category": "Transportation", "subcategory": "", "description": "", "amount": 11.0, "note": ""}, {"date": "2026-08-05", "type": "Expense", "account": "Cash", "category": "Medicine", "subcategory": "", "description": "", "amount": 60.0, "note": ""}, {"date": "2026-08-05", "type": "Expense", "account": "Cash", "category": "Food", "subcategory": "", "description": "", "amount": 135.0, "note": ""}, {"date": "2026-08-06", "type": "Income", "account": "Cash", "category": "Work", "subcategory": "Other", "description": "", "amount": 535.0, "note": ""}, {"date": "2026-08-06", "type": "Expense", "account": "Cash", "category": "Transportation", "subcategory": "", "description": "", "amount": 11.0, "note": ""}, {"date": "2026-08-06", "type": "Expense", "account": "Cash", "category": "Gas", "subcategory": "", "description": "", "amount": 221.0, "note": ""}, {"date": "2026-08-06", "type": "Expense", "account": "Cash", "category": "Date", "subcategory": "", "description": "", "amount": 32.0, "note": ""}, {"date": "2026-08-06", "type": "Expense", "account": "Cash", "category": "Date", "subcategory": "", "description": "", "amount": 50.0, "note": ""}, {"date": "2026-08-07", "type": "Expense", "account": "Cash", "category": "Date", "subcategory": "", "description": "Flower", "amount": 300.0, "note": ""}, {"date": "2026-08-07", "type": "Expense", "account": "Cash", "category": "Date", "subcategory": "", "description": "Grocery", "amount": 547.0, "note": ""}, {"date": "2026-08-07", "type": "Expense", "account": "Cash", "category": "Date", "subcategory": "", "description": "Drink", "amount": 109.0, "note": ""}, {"date": "2026-08-07", "type": "Expense", "account": "Cash", "category": "Date", "subcategory": "", "description": "Street food", "amount": 75.0, "note": ""}, {"date": "2026-08-07", "type": "Expense", "account": "Cash", "category": "Date", "subcategory": "", "description": "Grocery", "amount": 820.0, "note": ""}, {"date": "2026-08-07", "type": "Expense", "account": "Cash", "category": "Food", "subcategory": "", "description": "", "amount": 38.0, "note": ""}, {"date": "2026-08-07", "type": "Expense", "account": "Cash", "category": "Date", "subcategory": "", "description": "Burger", "amount": 155.0, "note": ""}, {"date": "2026-08-07", "type": "Expense", "account": "Cash", "category": "Date", "subcategory": "", "description": "Bread", "amount": 85.0, "note": ""}, {"date": "2026-08-08", "type": "Expense", "account": "Cash", "category": "Gas", "subcategory": "", "description": "", "amount": 234.0, "note": ""}, {"date": "2026-08-08", "type": "Expense", "account": "Cash", "category": "Gas", "subcategory": "", "description": "", "amount": 185.0, "note": ""}, {"date": "2026-08-08", "type": "Expense", "account": "Cash", "category": "Family", "subcategory": "", "description": "Barge", "amount": 110.0, "note": ""}, {"date": "2026-08-08", "type": "Income", "account": "Cash", "category": "Family", "subcategory": "", "description": "", "amount": 185.0, "note": ""}, {"date": "2026-08-08", "type": "Expense", "account": "GCash (E-WALLET)", "category": "Adventure", "subcategory": "", "description": "", "amount": 500.0, "note": ""}, {"date": "2026-08-08", "type": "Income", "account": "Cash", "category": "Work", "subcategory": "Sideline", "description": "Microsoft Office Activation", "amount": 500.0, "note": ""}, {"date": "2026-08-09", "type": "Expense", "account": "GCash (E-WALLET)", "category": "Family", "subcategory": "", "description": "", "amount": 1.0, "note": ""}, {"date": "2026-08-09", "type": "Expense", "account": "Cash", "category": "Family", "subcategory": "", "description": "Barge", "amount": 135.0, "note": ""}, {"date": "2026-08-09", "type": "Expense", "account": "Atome (EXPENSES)", "category": "Family", "subcategory": "", "description": "", "amount": 170.0, "note": ""}, {"date": "2026-08-10", "type": "Income", "account": "MariBank (SAVINGS)", "category": "Bank", "subcategory": "", "description": "", "amount": 1.52, "note": ""}, {"date": "2026-08-10", "type": "Expense", "account": "Cash", "category": "Food", "subcategory": "", "description": "", "amount": 20.0, "note": ""}, {"date": "2026-08-10", "type": "Expense", "account": "Atome (EXPENSES)", "category": "Date", "subcategory": "", "description": "", "amount": 536.92, "note": ""}, {"date": "2026-08-10", "type": "Expense", "account": "Atome (EXPENSES)", "category": "Family", "subcategory": "", "description": "Mama's Medicine", "amount": 703.0, "note": ""}, {"date": "2026-08-11", "type": "Expense", "account": "Cash", "category": "Food", "subcategory": "", "description": "", "amount": 50.0, "note": ""}, {"date": "2026-08-12", "type": "Expense", "account": "Hello Money (CASHFLOW)", "category": "Adventure", "subcategory": "", "description": "", "amount": 1650.0, "note": ""}, {"date": "2026-08-12", "type": "Expense", "account": "Cash", "category": "Laundry", "subcategory": "", "description": "", "amount": 175.0, "note": ""}], "transfers": [{"date": "2026-07-31", "transferType": "Atome Payment", "fromAccount": "Hello Money (Cashflow)", "toAccount": "Atome (EXPENSES)", "amount": 1171.08, "note": ""}, {"date": "2026-07-31", "transferType": "Account Transfer", "fromAccount": "Hello Money (Cashflow)", "toAccount": "MariBank (SAVINGS)", "amount": 3000.0, "note": ""}, {"date": "2026-07-31", "transferType": "Account Transfer", "fromAccount": "Hello Money (Cashflow)", "toAccount": "GoTyme (EMERGENCY)", "amount": 4280.0, "note": ""}, {"date": "2026-07-31", "transferType": "Account Transfer", "fromAccount": "Hello Money (CASHFLOW)", "toAccount": "BPI (MT03)", "amount": 2000.0, "note": ""}, {"date": "2026-08-01", "transferType": "Account Transfer", "fromAccount": "Hello Money (CASHFLOW)", "toAccount": "Cash", "amount": 2200.0, "note": ""}, {"date": "2026-08-05", "transferType": "Account Transfer", "fromAccount": "Hello Money (CASHFLOW)", "toAccount": "Cash", "amount": 1400.0, "note": ""}, {"date": "2026-08-07", "transferType": "Account Transfer", "fromAccount": "Cash", "toAccount": "GCash (E-WALLET)", "amount": 300.0, "note": ""}, {"date": "2026-08-08", "transferType": "Account Transfer", "fromAccount": "Hello Money (CASHFLOW)", "toAccount": "GCash (E-WALLET)", "amount": 200.0, "note": ""}, {"date": "2026-08-08", "transferType": "Account Transfer", "fromAccount": "Hello Money (CASHFLOW)", "toAccount": "Cash", "amount": 3748.0, "note": ""}, {"date": "2026-08-08", "transferType": "Account Transfer", "fromAccount": "Hello Money (CASHFLOW)", "toAccount": "CIMB (INVESTMENT)", "amount": 512.02, "note": ""}, {"date": "2026-08-10", "transferType": "Account Transfer", "fromAccount": "Cash", "toAccount": "Hello Money (CASHFLOW)", "amount": 4500.0, "note": ""}, {"date": "2026-08-10", "transferType": "Atome Payment", "fromAccount": "CIMB (INVESTMENT)", "toAccount": "Atome (EXPENSES)", "amount": 512.02, "note": ""}, {"date": "2026-08-11", "transferType": "Account Transfer", "fromAccount": "Cash", "toAccount": "Hello Money (CASHFLOW)", "amount": 100.0, "note": ""}], "accounts": [{"account": "Cash", "purpose": "Physical cash", "opening": 324.0, "goal": null}, {"account": "Hello Money (CASHFLOW)", "purpose": "Salary receiving & expense cashflow", "opening": 54.69, "goal": null}, {"account": "GCash (E-WALLET)", "purpose": "E-wallet", "opening": 0.0, "goal": null}, {"account": "Atome (EXPENSES)", "purpose": "Credit card / available limit", "opening": 52548.92, "goal": null}, {"account": "BPI (MT03)", "purpose": "Motorcycle fund", "opening": 0.0, "goal": 180000.0}, {"account": "MariBank (SAVINGS)", "purpose": "Long-term savings", "opening": 4.12, "goal": 25000.0}, {"account": "GoTyme (EMERGENCY)", "purpose": "Emergency fund", "opening": 6738.0, "goal": 100000.0}, {"account": "CIMB (INVESTMENT)", "purpose": "Investment fund", "opening": 1.88, "goal": 50000.0}], "budget": [{"year": 2026, "month": "August", "category": "Adventure", "amount": 0.0, "note": ""}, {"year": 2026, "month": "August", "category": "Date", "amount": 0.0, "note": ""}, {"year": 2026, "month": "August", "category": "Family", "amount": 0.0, "note": ""}, {"year": 2026, "month": "August", "category": "Food", "amount": 0.0, "note": ""}, {"year": 2026, "month": "August", "category": "Friend", "amount": 0.0, "note": ""}, {"year": 2026, "month": "August", "category": "Gas", "amount": 0.0, "note": ""}, {"year": 2026, "month": "August", "category": "Grocery", "amount": 0.0, "note": ""}, {"year": 2026, "month": "August", "category": "Gym Membership", "amount": 1000.0, "note": ""}, {"year": 2026, "month": "August", "category": "Insurance", "amount": 0.0, "note": ""}, {"year": 2026, "month": "August", "category": "Item", "amount": 0.0, "note": ""}, {"year": 2026, "month": "August", "category": "Laundry", "amount": 640.0, "note": ""}, {"year": 2026, "month": "August", "category": "Load", "amount": 250.0, "note": ""}, {"year": 2026, "month": "August", "category": "Medicine", "amount": 0.0, "note": ""}, {"year": 2026, "month": "August", "category": "Motor", "amount": 0.0, "note": ""}, {"year": 2026, "month": "August", "category": "Other", "amount": 0.0, "note": ""}, {"year": 2026, "month": "August", "category": "Personal", "amount": 0.0, "note": ""}, {"year": 2026, "month": "August", "category": "Subscription", "amount": 169.0, "note": ""}, {"year": 2026, "month": "August", "category": "Transportation", "amount": 0.0, "note": ""}], "payroll": [{"payDate": "2026-07-31", "expectedWorkdays": 14.0, "actualWorkdays": 13.0, "expectedSalary": 8400.0}, {"payDate": "2026-08-15", "expectedWorkdays": 13.0, "actualWorkdays": 0, "expectedSalary": 7800.0}, {"payDate": "2026-08-31", "expectedWorkdays": 0, "actualWorkdays": 0, "expectedSalary": 0}, {"payDate": "2026-09-15", "expectedWorkdays": 0, "actualWorkdays": 0, "expectedSalary": 0}, {"payDate": "2026-09-30", "expectedWorkdays": 0, "actualWorkdays": 0, "expectedSalary": 0}, {"payDate": "2026-10-15", "expectedWorkdays": 0, "actualWorkdays": 0, "expectedSalary": 0}, {"payDate": "2026-10-31", "expectedWorkdays": 0, "actualWorkdays": 0, "expectedSalary": 0}, {"payDate": "2026-11-15", "expectedWorkdays": 0, "actualWorkdays": 0, "expectedSalary": 0}, {"payDate": "2026-11-30", "expectedWorkdays": 0, "actualWorkdays": 0, "expectedSalary": 0}, {"payDate": "2026-12-15", "expectedWorkdays": 0, "actualWorkdays": 0, "expectedSalary": 0}, {"payDate": "2026-12-31", "expectedWorkdays": 0, "actualWorkdays": 0, "expectedSalary": 0}], "dropdowns": {"transactionType": ["Income", "Expense"], "account": ["Cash", "Hello Money (CASHFLOW)", "GCash (E-WALLET)", "Atome (EXPENSES)", "BPI (MT03)", "MariBank (SAVINGS)", "GoTyme (EMERGENCY)", "CIMB (INVESTMENT)"], "expenseCategory": ["Adventure", "Date", "Family", "Food", "Friend", "Gas", "Grocery", "Gym Membership", "Insurance", "Item", "Laundry", "Load", "Medicine", "Motor", "Other", "Personal", "Subscription", "Transportation"], "incomeCategory": ["Work", "Family", "Bank", "Excess"], "incomeSubcategory": ["Regular Salary", "Incentives", "Sideline", "Refund", "Other"], "transferType": ["Account Transfer", "Atome Payment"]}, "settings": {"trackerStartDate": "2026-08-01", "firstPayrollDate": "2026-07-31", "atomeStatementDay": 10, "atomeDueDay": 20, "currency": "PHP", "atomeReferenceDate": "2026-08-10"}};

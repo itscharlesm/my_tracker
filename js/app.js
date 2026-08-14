@@ -198,8 +198,8 @@ let chartMonthly, chartCategory, chartIncomeCategory;
 function initDashboardFilters() {
   const dd = getDropdowns();
   const yrs = yearsInData();
-  fillSelect(document.getElementById('dashYear'), yrs, yrs[yrs.length - 1]);
-  fillSelect(document.getElementById('dashMonth'), ['All', ...MONTHS], 'All');
+  fillSelect(document.getElementById('dashYear'), yrs, yrs.includes(new Date().getFullYear()) ? new Date().getFullYear() : yrs[yrs.length - 1]);
+  fillSelect(document.getElementById('dashMonth'), ['All', ...MONTHS], MONTHS[new Date().getMonth()]);
   const weeks = ['All', ...Array.from({ length: 53 }, (_, i) => i + 1)];
   fillSelect(document.getElementById('dashWeek'), weeks, 'All');
   ['dashYear', 'dashMonth', 'dashWeek'].forEach(id =>
@@ -350,8 +350,8 @@ const TXN_PAGE_SIZE = 50;
 
 function initTxnFilters() {
   const yrs = yearsInData();
-  fillSelect(document.getElementById('txnFilterYear'), ['All', ...yrs], yrs[yrs.length - 1]);
-  fillSelect(document.getElementById('txnFilterMonth'), ['All', ...MONTHS], 'All');
+  fillSelect(document.getElementById('txnFilterYear'), ['All', ...yrs], yrs.includes(new Date().getFullYear()) ? new Date().getFullYear() : yrs[yrs.length - 1]);
+  fillSelect(document.getElementById('txnFilterMonth'), ['All', ...MONTHS], MONTHS[new Date().getMonth()]);
   document.getElementById('txnFilterYear').addEventListener('change', () => { txnPage = 1; renderTransactions(); });
   document.getElementById('txnFilterMonth').addEventListener('change', () => { txnPage = 1; renderTransactions(); });
   document.getElementById('txnSearch').addEventListener('input', () => { txnPage = 1; renderTransactions(); });
@@ -475,8 +475,25 @@ function deleteTxnFromModal() {
 /* ================================================================
    TRANSFERS
    ================================================================ */
+function initTransferFilters() {
+  const yrs = yearsInData();
+  fillSelect(document.getElementById('transferFilterYear'), ['All', ...yrs], yrs.includes(new Date().getFullYear()) ? new Date().getFullYear() : yrs[yrs.length - 1]);
+  fillSelect(document.getElementById('transferFilterMonth'), ['All', ...MONTHS], MONTHS[new Date().getMonth()]);
+  document.getElementById('transferFilterYear').addEventListener('change', renderTransfers);
+  document.getElementById('transferFilterMonth').addEventListener('change', renderTransfers);
+}
+
+function filteredTransfers() {
+  const year = document.getElementById('transferFilterYear').value;
+  const month = document.getElementById('transferFilterMonth').value;
+  return getTransfers()
+    .filter(t => year === 'All' || String(deriveYear(t.date)) === String(year))
+    .filter(t => month === 'All' || deriveMonthName(t.date) === month)
+    .sort((a, b) => b.date.localeCompare(a.date) || b.id - a.id);
+}
+
 function renderTransfers() {
-  const list = getTransfers().slice().sort((a, b) => b.date.localeCompare(a.date) || b.id - a.id);
+  const list = filteredTransfers();
   document.querySelector('#transferTable tbody').innerHTML = list.map(t => `
     <tr class="row-clickable" onclick="openTransferModal(${t.id})">
       <td>${t.date}</td><td>${t.transferType}</td><td>${t.fromAccount}</td><td>${t.toAccount}</td>
@@ -541,7 +558,7 @@ function deleteTransferFromModal() {
    ================================================================ */
 function initBudgetFilters() {
   const yrs = yearsInData();
-  fillSelect(document.getElementById('budgetYear'), yrs, yrs[yrs.length - 1]);
+  fillSelect(document.getElementById('budgetYear'), yrs, yrs.includes(new Date().getFullYear()) ? new Date().getFullYear() : yrs[yrs.length - 1]);
   fillSelect(document.getElementById('budgetMonth'), MONTHS, MONTHS[new Date().getMonth()]);
   document.getElementById('budgetYear').addEventListener('change', renderBudget);
   document.getElementById('budgetMonth').addEventListener('change', renderBudget);
@@ -876,6 +893,7 @@ loadAll();
 document.getElementById('currencyLabel').textContent = getSettings().currency || '';
 initDashboardFilters();
 initTxnFilters();
+initTransferFilters();
 initBudgetFilters();
 renderDashboard();
 
