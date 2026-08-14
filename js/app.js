@@ -267,6 +267,8 @@ function renderDashboard() {
     byCat[t.category] = (byCat[t.category] || 0) + Number(t.amount || 0);
   });
   const catLabels = Object.keys(byCat);
+  document.getElementById('totalExpenseCategory').textContent =
+    'Total: ' + fmt(catLabels.reduce((s, c) => s + byCat[c], 0));
   const ctx2 = document.getElementById('chartCategory').getContext('2d');
   if (chartCategory) chartCategory.destroy();
   chartCategory = new Chart(ctx2, {
@@ -307,6 +309,8 @@ function renderDashboard() {
     byIncomeCat[label] = (byIncomeCat[label] || 0) + Number(t.amount || 0);
   });
   const incCatLabels = Object.keys(byIncomeCat);
+  document.getElementById('totalIncomeCategory').textContent =
+    'Total: ' + fmt(incCatLabels.reduce((s, c) => s + byIncomeCat[c], 0));
   const ctx3 = document.getElementById('chartIncomeCategory').getContext('2d');
   if (chartIncomeCategory) chartIncomeCategory.destroy();
   chartIncomeCategory = new Chart(ctx3, {
