@@ -689,7 +689,8 @@ function renderPayroll() {
     const inRange = (t) => { const td = parseDate(t.date); return td >= periodStart && td <= periodEnd; };
     const salary = getTransactions().filter(t => sameText(t.type, 'Income') && sameText(t.category, 'Work') && sameText(t.subcategory, 'Regular Salary') && inRange(t)).reduce((s, t) => s + Number(t.amount || 0), 0);
     const incentives = getTransactions().filter(t => sameText(t.type, 'Income') && sameText(t.category, 'Work') && sameText(t.subcategory, 'Incentives') && inRange(t)).reduce((s, t) => s + Number(t.amount || 0), 0);
-    const actualTotal = salary + incentives;
+    const holiday = getTransactions().filter(t => sameText(t.type, 'Income') && sameText(t.category, 'Work') && sameText(t.subcategory, 'Holiday') && inRange(t)).reduce((s, t) => s + Number(t.amount || 0), 0);
+    const actualTotal = salary + incentives + holiday;
     const variance = actualTotal - Number(p.expectedSalary || 0);
     return `<tr class="row-clickable" onclick="openPayrollModal(${p.id})">
       <td>${p.payDate}</td><td class="small">${half}</td>
@@ -778,36 +779,50 @@ function payrollSubcategoryTotal(payDate, subcategory) {
     .reduce((s, t) => s + Number(t.amount || 0), 0);
 }
 function addPayrollHolidayIncentiveColumns() {
-  const rows = Array.from(document.querySelectorAll('#payrollTable tbody tr'));
+  try {
+    const rows = Array.from(document.querySelectorAll('#payrollTable tbody tr'));
 
-  // empty-state row (the "No pay dates yet." placeholder) — just widen its colspan
-  if (rows.length === 1 && rows[0].querySelector('td[colspan]')) {
-    const emptyTd = rows[0].querySelector('td[colspan]');
-    emptyTd.colSpan = Number(emptyTd.colSpan) + 2;
-    return;
+    // empty-state row (the "No pay dates yet." placeholder) — just widen its colspan
+    if (rows.length === 1 && rows[0].querySelector('td[colspan]')) {
+      const emptyTd = rows[0].querySelector('td[colspan]');
+      emptyTd.colSpan = Number(emptyTd.colSpan) + 2;
+      return;
+    }
+
+    const list = getPayroll().slice().sort((a, b) => a.payDate.localeCompare(b.payDate));
+    rows.forEach((row, i) => {
+      const p = list[i];
+      if (!p) return;
+      const tds = row.querySelectorAll('td');
+      // Anchor from the END of the row instead of a fixed front index: the
+      // last 3 cells are always [Actual (from entries), Variance, chevron],
+      // regardless of how many columns come before them. This is robust
+      // even if this function runs more than once or the row shape changes.
+      const actualTd = tds[tds.length - 3];
+      if (!actualTd) return;
+
+      // Guard against double-inserting if this ever runs twice on the same
+      // row (e.g. re-render race): remove any previously-added cells first.
+      row.querySelectorAll('td[data-added="holiday-incentive"]').forEach(td => td.remove());
+
+      const holiday = payrollSubcategoryTotal(p.payDate, 'Holiday');
+      const incentive = payrollSubcategoryTotal(p.payDate, 'Incentives');
+
+      const holidayTd = document.createElement('td');
+      holidayTd.className = 'text-end';
+      holidayTd.dataset.added = 'holiday-incentive';
+      holidayTd.textContent = fmt(holiday);
+
+      const incentiveTd = document.createElement('td');
+      incentiveTd.className = 'text-end';
+      incentiveTd.dataset.added = 'holiday-incentive';
+      incentiveTd.textContent = fmt(incentive);
+
+      actualTd.before(holidayTd, incentiveTd);
+    });
+  } catch (err) {
+    console.error('Payroll Holiday/Incentive columns failed to render:', err);
   }
-
-  const list = getPayroll().slice().sort((a, b) => a.payDate.localeCompare(b.payDate));
-  rows.forEach((row, i) => {
-    const p = list[i];
-    if (!p) return;
-    const tds = row.querySelectorAll('td');
-    const expectedSalaryTd = tds[4]; // 5th <td> = Expected Salary
-    if (!expectedSalaryTd) return;
-
-    const holiday = payrollSubcategoryTotal(p.payDate, 'Holiday');
-    const incentive = payrollSubcategoryTotal(p.payDate, 'Incentives');
-
-    const holidayTd = document.createElement('td');
-    holidayTd.className = 'text-end';
-    holidayTd.textContent = fmt(holiday);
-
-    const incentiveTd = document.createElement('td');
-    incentiveTd.className = 'text-end';
-    incentiveTd.textContent = fmt(incentive);
-
-    expectedSalaryTd.after(holidayTd, incentiveTd);
-  });
 }
 
 /* ================================================================
@@ -960,15 +975,20 @@ initTransferFilters();
 initBudgetFilters();
 renderDashboard();
 
-/* ADDED: wrap render.payroll (defined in BOOT above) so the new Holiday /
-   Incentive columns are painted every time the Payroll page re-renders,
-   without touching renderPayroll's own body. */
+/* ADDED: patch the global renderPayroll function itself (not just
+   render.payroll) so the new Holiday / Incentive columns are painted no
+   matter how the render is triggered — both page navigation (which calls
+   render.payroll()) and the Add/Edit/Delete pay-date modal buttons (which
+   call renderPayroll() directly) end up running the same patched
+   function, without touching renderPayroll's own original body or any of
+   its call sites. */
 (function () {
-  const _origRenderPayroll = render.payroll;
-  render.payroll = function () {
+  const _origRenderPayroll = renderPayroll;
+  renderPayroll = function () {
     _origRenderPayroll();
     addPayrollHolidayIncentiveColumns();
   };
+  render.payroll = renderPayroll;
 })();
 
 /* =========================================================================
