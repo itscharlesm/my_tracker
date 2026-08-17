@@ -747,6 +747,69 @@ function deletePayrollFromModal() {
   }, { danger: true, confirmText: 'Delete' });
 }
 
+/* =========================================================================
+   ADDED: Payroll — Holiday and Incentive columns.
+
+   Purely additive — it does not modify a single existing line, function,
+   or comment above (including renderPayroll itself). It reuses the
+   existing helper functions (getPayroll, getTransactions, sameText,
+   parseDate, fmt, etc.) and hooks into the existing render.payroll render
+   cycle by wrapping it further down in the BOOT section (same technique
+   already used for the dashboard extras block below), so the two new
+   columns stay in sync automatically every time the Payroll page
+   re-renders. It matches the same pay-period math renderPayroll already
+   uses for "Actual (from entries)".
+
+   Requires the two new <th> cells ("Holiday" and "Incentive") to be added
+   to the #payrollTable header in index.html, right after "Expected
+   Salary" and before "Actual (from entries)".
+   ========================================================================= */
+function payrollPeriodRange(payDate) {
+  const d = parseDate(payDate);
+  const periodStart = d.getDate() === 15 ? new Date(d.getFullYear(), d.getMonth(), 1) : new Date(d.getFullYear(), d.getMonth(), 16);
+  const periodEnd = d.getDate() === 15 ? d : new Date(d.getFullYear(), d.getMonth() + 1, 0);
+  return { periodStart, periodEnd };
+}
+function payrollSubcategoryTotal(payDate, subcategory) {
+  const { periodStart, periodEnd } = payrollPeriodRange(payDate);
+  return getTransactions()
+    .filter(t => sameText(t.type, 'Income') && sameText(t.category, 'Work') && sameText(t.subcategory, subcategory))
+    .filter(t => { const td = parseDate(t.date); return td >= periodStart && td <= periodEnd; })
+    .reduce((s, t) => s + Number(t.amount || 0), 0);
+}
+function addPayrollHolidayIncentiveColumns() {
+  const rows = Array.from(document.querySelectorAll('#payrollTable tbody tr'));
+
+  // empty-state row (the "No pay dates yet." placeholder) — just widen its colspan
+  if (rows.length === 1 && rows[0].querySelector('td[colspan]')) {
+    const emptyTd = rows[0].querySelector('td[colspan]');
+    emptyTd.colSpan = Number(emptyTd.colSpan) + 2;
+    return;
+  }
+
+  const list = getPayroll().slice().sort((a, b) => a.payDate.localeCompare(b.payDate));
+  rows.forEach((row, i) => {
+    const p = list[i];
+    if (!p) return;
+    const tds = row.querySelectorAll('td');
+    const expectedSalaryTd = tds[4]; // 5th <td> = Expected Salary
+    if (!expectedSalaryTd) return;
+
+    const holiday = payrollSubcategoryTotal(p.payDate, 'Holiday');
+    const incentive = payrollSubcategoryTotal(p.payDate, 'Incentives');
+
+    const holidayTd = document.createElement('td');
+    holidayTd.className = 'text-end';
+    holidayTd.textContent = fmt(holiday);
+
+    const incentiveTd = document.createElement('td');
+    incentiveTd.className = 'text-end';
+    incentiveTd.textContent = fmt(incentive);
+
+    expectedSalaryTd.after(holidayTd, incentiveTd);
+  });
+}
+
 /* ================================================================
    ATOME
    ================================================================ */
@@ -897,6 +960,17 @@ initTransferFilters();
 initBudgetFilters();
 renderDashboard();
 
+/* ADDED: wrap render.payroll (defined in BOOT above) so the new Holiday /
+   Incentive columns are painted every time the Payroll page re-renders,
+   without touching renderPayroll's own body. */
+(function () {
+  const _origRenderPayroll = render.payroll;
+  render.payroll = function () {
+    _origRenderPayroll();
+    addPayrollHolidayIncentiveColumns();
+  };
+})();
+
 /* =========================================================================
    ADDED: extra dashboard insights — Net Cashflow Trend, Top Spending
    Categories, and Account Balance Distribution.
@@ -905,7 +979,7 @@ renderDashboard();
    single existing line, function, or comment. It reuses the existing
    helper functions (getTransactions, deriveYear, deriveMonthName,
    accountBalance, fmt, etc.) and hooks into the dashboard's existing
-   render cycle by wrapping render.dashboard, so it stays in sync with
+   render cycle by wrapping it, so it stays in sync with
    the same Year / Month / Week filters already on the dashboard.
    ========================================================================= */
 (function () {
