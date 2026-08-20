@@ -942,3 +942,67 @@ textarea:focus-visible {
     font-size: 16px !important;
   }
 }
+
+/* =========================================================================
+   ADDED: Budget Performance report (dashboard). Reuses existing tokens
+   and badge/progress classes already defined above; only new selectors
+   are introduced here, nothing existing is changed.
+   ========================================================================= */
+.budget-rep-stat {
+  background: var(--surface-2);
+  border-radius: var(--r-sm);
+  padding: 10px 12px;
+  text-align: center;
+}
+
+.budget-rep-stat-label {
+  font-size: .62rem;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.budget-rep-stat-value {
+  font-family: var(--font-mono);
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--ink);
+  margin-top: 3px;
+}
+
+.budget-rep-row {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.budget-rep-row:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.budget-rep-row-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+  font-size: .84rem;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.budget-rep-cat {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.budget-rep-row-bottom {
+  display: flex;
+  justify-content: space-between;
+  font-size: .74rem;
+  color: var(--muted);
+  margin-top: 5px;
+  font-family: var(--font-mono);
+}

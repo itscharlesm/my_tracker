@@ -4,7 +4,7 @@ index:
 
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Charles' Money Tracker</title>
   <link rel="icon" href="data:,">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -1809,6 +1809,29 @@ textarea:focus-visible {
   font-family: var(--font-mono);
   color: var(--expense);
   flex-shrink: 0;
+}
+
+/* =========================================================================
+   ADDED: prevent iOS/Android auto-zoom when tapping inputs inside modals.
+   Mobile browsers (Safari/Chrome) automatically zoom the page in when a
+   focused input/select/textarea has a computed font-size under 16px.
+   Several existing rules above (.form-control, .form-select,
+   .form-control-sm, .form-select-sm) use font sizes below that threshold
+   on purpose for desktop density, so instead of changing those rules this
+   block only raises the effective size on small screens, purely additive
+   and does not modify a single line above.
+   ========================================================================= */
+@media (max-width: 576px) {
+
+  .form-control,
+  .form-select,
+  .form-control-sm,
+  .form-select-sm,
+  input,
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
 }
 
 app.js:

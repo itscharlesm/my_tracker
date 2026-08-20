@@ -1148,3 +1148,146 @@ renderDashboard();
   // above as part of the existing boot sequence).
   renderDashboardExtras();
 })();
+
+/* =========================================================================
+   ADDED: Budget Performance report (dashboard). Reuses existing helpers
+   (getBudget, getTransactions, deriveYear, deriveMonthName, deriveWeek,
+   sameText, fmt, fmtPct) and wraps the current render.dashboard (which
+   already includes the earlier "extra dashboard insights" wrapper) so
+   this new card refreshes in step with it, without editing a single
+   existing line, function, or comment anywhere above.
+
+   Requires the following in index.html, placed right below the existing
+   Income by Category / Expenses by Category row and right above the
+   "ADDED: extra dashboard insights" block:
+
+     <div class="row g-3 mb-3">
+       <div class="col-12">
+         <div class="card h-100">
+           <div class="card-body">
+             <h6 class="card-title"><i class="bi bi-clipboard-data"></i> Budget Performance (<span id="budgetReportPeriodLabel"></span>)</h6>
+             <div class="row g-2 mb-3" id="budgetReportSummary"></div>
+             <div id="budgetReportList"></div>
+           </div>
+         </div>
+       </div>
+     </div>
+
+   And the matching CSS block (.budget-rep-*) appended to css/style.css.
+   ========================================================================= */
+(function () {
+  function currentDashFiltersForBudgetReport() {
+    return {
+      year: document.getElementById('dashYear').value,
+      month: document.getElementById('dashMonth').value,
+      week: document.getElementById('dashWeek').value,
+    };
+  }
+
+  // Actual spend for one category, honoring Year + Month + Week — the
+  // Budget tab itself only filters by Year/Month, so this extends that
+  // same idea to also respect the dashboard's Week filter when set.
+  function categoryActualForPeriod(category, year, month, week) {
+    return getTransactions()
+      .filter(t => sameText(t.type, 'Expense') && sameText(t.category, category))
+      .filter(t => String(deriveYear(t.date)) === String(year))
+      .filter(t => month === 'All' || deriveMonthName(t.date) === month)
+      .filter(t => week === 'All' || String(deriveWeek(t.date)) === String(week))
+      .reduce((s, t) => s + Number(t.amount || 0), 0);
+  }
+
+  // Only categories that actually have a budget set (amount > 0). When
+  // Month = "All", budgeted amounts for that category across every month
+  // of the selected year are summed together.
+  function budgetedRowsForPeriod(year, month) {
+    return getBudget().filter(b =>
+      String(b.year) === String(year) &&
+      Number(b.amount) > 0 &&
+      (month === 'All' || b.month === month));
+  }
+
+  function renderBudgetReport() {
+    const { year, month, week } = currentDashFiltersForBudgetReport();
+    document.getElementById('budgetReportPeriodLabel').textContent =
+      `${month} ${year}${week !== 'All' ? ' • Week ' + week : ''}`;
+
+    const rows = budgetedRowsForPeriod(year, month);
+    const byCategory = {};
+    rows.forEach(r => { byCategory[r.category] = (byCategory[r.category] || 0) + Number(r.amount || 0); });
+    const categories = Object.keys(byCategory);
+
+    const summaryEl = document.getElementById('budgetReportSummary');
+    const listEl = document.getElementById('budgetReportList');
+
+    if (!categories.length) {
+      summaryEl.innerHTML = '';
+      listEl.innerHTML = '<p class="text-muted small mb-0">No budgeted categories for this period yet — set one in the Budget tab.</p>';
+      return;
+    }
+
+    let totalBudgeted = 0, totalActual = 0;
+    const items = categories.map(cat => {
+      const budgeted = byCategory[cat];
+      const actual = categoryActualForPeriod(cat, year, month, week);
+      totalBudgeted += budgeted;
+      totalActual += actual;
+      const remaining = budgeted - actual;
+      const used = budgeted > 0 ? actual / budgeted : 0;
+      let status = 'ON TRACK', cls = 'badge-ok';
+      if (remaining < 0) { status = 'OVER BUDGET'; cls = 'badge-over'; }
+      else if (used >= 0.8) { status = 'WATCH'; cls = 'badge-watch'; }
+      return { cat, budgeted, actual, remaining, used, status, cls };
+    }).sort((a, b) => b.used - a.used);
+
+    const totalRemaining = totalBudgeted - totalActual;
+
+    summaryEl.innerHTML = `
+      <div class="col-4">
+        <div class="budget-rep-stat">
+          <div class="budget-rep-stat-label">Budgeted</div>
+          <div class="budget-rep-stat-value">${fmt(totalBudgeted)}</div>
+        </div>
+      </div>
+      <div class="col-4">
+        <div class="budget-rep-stat">
+          <div class="budget-rep-stat-label">Spent</div>
+          <div class="budget-rep-stat-value ${totalRemaining < 0 ? 'text-danger' : ''}">${fmt(totalActual)}</div>
+        </div>
+      </div>
+      <div class="col-4">
+        <div class="budget-rep-stat">
+          <div class="budget-rep-stat-label">${totalRemaining < 0 ? 'Over by' : 'Remaining'}</div>
+          <div class="budget-rep-stat-value ${totalRemaining < 0 ? 'text-danger' : 'text-success'}">${fmt(Math.abs(totalRemaining))}</div>
+        </div>
+      </div>`;
+
+    listEl.innerHTML = items.map(it => `
+      <div class="budget-rep-row">
+        <div class="budget-rep-row-top">
+          <span class="budget-rep-cat">${it.cat}</span>
+          <span class="badge ${it.cls}">${it.status}</span>
+        </div>
+        <div class="progress" style="height:10px">
+          <div class="progress-bar ${it.remaining < 0 ? '' : 'bg-success'}" style="width:${Math.min(it.used * 100, 100).toFixed(0)}%;${it.remaining < 0 ? 'background:var(--expense);' : ''}"></div>
+        </div>
+        <div class="budget-rep-row-bottom">
+          <span>${fmt(it.actual)} of ${fmt(it.budgeted)}</span>
+          <span class="${it.remaining < 0 ? 'text-danger' : ''}">${fmtPct(it.used)}</span>
+        </div>
+      </div>`).join('');
+  }
+
+  // Wrap (not replace) the current render.dashboard — at this point it's
+  // already the version wrapped by the earlier "extra dashboard insights"
+  // block, so both keep running in sequence on every render.
+  const _origRenderDashboardForBudgetReport = render.dashboard;
+  render.dashboard = function () {
+    _origRenderDashboardForBudgetReport();
+    renderBudgetReport();
+  };
+
+  ['dashYear', 'dashMonth', 'dashWeek'].forEach(id =>
+    document.getElementById(id).addEventListener('change', renderBudgetReport));
+
+  renderBudgetReport();
+})();
