@@ -105,6 +105,19 @@
         <div class="col-12">
           <div class="card h-100">
             <div class="card-body">
+              <h6 class="card-title"><i class="bi bi-clipboard-data"></i> Budget Performance (<span
+                  id="budgetReportPeriodLabel"></span>)</h6>
+              <div class="row g-2 mb-3" id="budgetReportSummary"></div>
+              <div id="budgetReportList"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row g-3 mb-3">
+        <div class="col-12">
+          <div class="card h-100">
+            <div class="card-body">
               <h6 class="card-title"><i class="bi bi-bar-chart-line"></i> Income vs Expenses by Month</h6>
               <canvas id="chartMonthly" height="200"></canvas>
             </div>
@@ -128,19 +141,6 @@
               <h6 class="card-title"><i class="bi bi-pie-chart"></i> Expenses by Category</h6>
               <canvas id="chartCategory" height="200"></canvas>
               <div class="text-end fw-semibold mt-2" id="totalExpenseCategory">Total: 0</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="row g-3 mb-3">
-        <div class="col-12">
-          <div class="card h-100">
-            <div class="card-body">
-              <h6 class="card-title"><i class="bi bi-clipboard-data"></i> Budget Performance (<span
-                  id="budgetReportPeriodLabel"></span>)</h6>
-              <div class="row g-2 mb-3" id="budgetReportSummary"></div>
-              <div id="budgetReportList"></div>
             </div>
           </div>
         </div>
