@@ -1304,3 +1304,86 @@ renderDashboard();
 
   renderBudgetReport();
 })();
+
+/* =========================================================================
+   ADDED: "Today" stat card (dashboard) — shows today's income, expenses,
+   and net cashflow, regardless of the dashboard's Year/Month/Week filter.
+   Purely additive — does not modify a single existing line above.
+   ========================================================================= */
+(function () {
+  function renderTodayCard() {
+    const todayStr = toLocalISODate(new Date());
+    const todaysTxns = getTransactions().filter(t => t.date === todayStr);
+    const income = todaysTxns.filter(t => t.type === 'Income').reduce((s, t) => s + Number(t.amount || 0), 0);
+    const expense = todaysTxns.filter(t => t.type === 'Expense').reduce((s, t) => s + Number(t.amount || 0), 0);
+    const net = income - expense;
+
+    const netEl = document.getElementById('statTodayNet');
+    netEl.textContent = fmt(net);
+    netEl.classList.toggle('positive', net >= 0);
+    netEl.classList.toggle('negative', net < 0);
+
+    document.getElementById('statTodayIncome').textContent = 'In ' + fmt(income);
+    document.getElementById('statTodayExpense').textContent = 'Out ' + fmt(expense);
+  }
+
+  const _origRenderDashboardForToday = render.dashboard;
+  render.dashboard = function () {
+    _origRenderDashboardForToday();
+    renderTodayCard();
+  };
+
+  renderTodayCard();
+})();
+
+/* =========================================================================
+   ADDED: sub-line text for Income / Expenses / Savings cards (entry counts,
+   average per entry, and net amount) so they visually match the Today
+   card. Reuses the same period-filter logic as the existing dashboard
+   (dashYear/dashMonth/dashWeek), wraps render.dashboard again — does not
+   modify a single existing line above.
+   ========================================================================= */
+(function () {
+  function periodTxns(year, month, week) {
+    return getTransactions().filter(t => {
+      if (String(deriveYear(t.date)) !== String(year)) return false;
+      if (month !== 'All' && deriveMonthName(t.date) !== month) return false;
+      if (week !== 'All' && String(deriveWeek(t.date)) !== String(week)) return false;
+      return true;
+    });
+  }
+
+  function renderStatSubs() {
+    const year = document.getElementById('dashYear').value;
+    const month = document.getElementById('dashMonth').value;
+    const week = document.getElementById('dashWeek').value;
+    const txns = periodTxns(year, month, week);
+
+    const incomeTxns = txns.filter(t => t.type === 'Income');
+    const expenseTxns = txns.filter(t => t.type === 'Expense');
+    const income = incomeTxns.reduce((s, t) => s + Number(t.amount || 0), 0);
+    const expense = expenseTxns.reduce((s, t) => s + Number(t.amount || 0), 0);
+    const net = income - expense;
+
+    document.getElementById('statIncomeSub').textContent =
+      `${incomeTxns.length} entries · avg ${fmt(incomeTxns.length ? income / incomeTxns.length : 0)}`;
+    document.getElementById('statExpenseSub').textContent =
+      `${expenseTxns.length} entries · avg ${fmt(expenseTxns.length ? expense / expenseTxns.length : 0)}`;
+
+    const savingsSub = document.getElementById('statSavingsSub');
+    savingsSub.textContent = `Net ${fmt(net)}`;
+    savingsSub.classList.toggle('positive', net >= 0);
+    savingsSub.classList.toggle('negative', net < 0);
+  }
+
+  const _origRenderDashboardForSubs = render.dashboard;
+  render.dashboard = function () {
+    _origRenderDashboardForSubs();
+    renderStatSubs();
+  };
+
+  ['dashYear', 'dashMonth', 'dashWeek'].forEach(id =>
+    document.getElementById(id).addEventListener('change', renderStatSubs));
+
+  renderStatSubs();
+})();

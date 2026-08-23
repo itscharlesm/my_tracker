@@ -54,30 +54,46 @@
       </div>
 
       <div class="row g-2 my-3">
-        <div class="col-4">
-          <div class="card stat-card stat-income h-100">
+        <div class="col-6 col-md-3">
+          <div class="card stat-card stat-today h-100">
             <div class="card-body">
-              <div class="stat-icon"><i class="bi bi-arrow-down-left"></i></div>
-              <div class="stat-label">Income</div>
-              <div class="stat-value" id="statIncome">0</div>
+              <div class="stat-icon"><i class="bi bi-calendar-check"></i></div>
+              <div class="stat-label">Today</div>
+              <div class="stat-value" id="statTodayNet">0</div>
+              <div class="stat-today-sub">
+                <span class="in" id="statTodayIncome">In 0</span>
+                <span class="out" id="statTodayExpense">Out 0</span>
+              </div>
             </div>
           </div>
         </div>
-        <div class="col-4">
-          <div class="card stat-card stat-expense h-100">
-            <div class="card-body">
-              <div class="stat-icon"><i class="bi bi-arrow-up-right"></i></div>
-              <div class="stat-label">Expenses</div>
-              <div class="stat-value" id="statExpense">0</div>
-            </div>
-          </div>
-        </div>
-        <div class="col-4">
+        <div class="col-6 col-md-3">
           <div class="card stat-card stat-savings h-100">
             <div class="card-body">
               <div class="stat-icon"><i class="bi bi-piggy-bank"></i></div>
               <div class="stat-label">Savings</div>
               <div class="stat-value" id="statSavings">0%</div>
+              <div class="stat-sub" id="statSavingsSub">Net 0</div>
+            </div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="card stat-card stat-income h-100">
+            <div class="card-body">
+              <div class="stat-icon"><i class="bi bi-arrow-down-left"></i></div>
+              <div class="stat-label">Income</div>
+              <div class="stat-value" id="statIncome">0</div>
+              <div class="stat-sub" id="statIncomeSub">0 entries</div>
+            </div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="card stat-card stat-expense h-100">
+            <div class="card-body">
+              <div class="stat-icon"><i class="bi bi-arrow-up-right"></i></div>
+              <div class="stat-label">Expenses</div>
+              <div class="stat-value" id="statExpense">0</div>
+              <div class="stat-sub" id="statExpenseSub">0 entries</div>
             </div>
           </div>
         </div>

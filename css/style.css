@@ -1006,3 +1006,63 @@ textarea:focus-visible {
   margin-top: 5px;
   font-family: var(--font-mono);
 }
+
+/* =========================================================================
+   ADDED: "Today" stat card colors and income/expense sub-line.
+   Purely additive — nothing above this block was changed.
+   ========================================================================= */
+.stat-today {
+  border-left-color: var(--info);
+}
+
+.stat-today .stat-icon {
+  background: var(--info-bg);
+  color: var(--info);
+}
+
+.stat-today .stat-value.positive {
+  color: var(--income);
+}
+
+.stat-today .stat-value.negative {
+  color: var(--expense);
+}
+
+.stat-today-sub {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 6px;
+  font-family: var(--font-mono);
+  font-size: .68rem;
+  font-weight: 600;
+}
+
+.stat-today-sub .in {
+  color: var(--income);
+}
+
+.stat-today-sub .out {
+  color: var(--expense);
+}
+
+/* =========================================================================
+   ADDED: generic sub-line for Income/Expenses/Savings cards, so all 4
+   dashboard stat cards carry the same visual weight as the Today card.
+   Purely additive — nothing above this block was changed.
+   ========================================================================= */
+.stat-sub {
+  margin-top: 6px;
+  font-family: var(--font-mono);
+  font-size: .68rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.stat-sub.positive {
+  color: var(--income);
+}
+
+.stat-sub.negative {
+  color: var(--expense);
+}
