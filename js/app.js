@@ -844,18 +844,31 @@ function renderAtome() {
   document.getElementById('atomeUtilization').textContent = fmtPct(utilization);
 
   // next 12 statement/due cycles from today
+  // FIXED: each cycle's outstanding is now computed per-row instead of
+  // reusing the single global `outstanding` value on every row. A purchase
+  // only counts toward a cycle if it happened on/before that cycle's
+  // statement date (later purchases roll into the NEXT statement), and a
+  // payment only clears a cycle if it happened on/before that cycle's due
+  // date. This is the only part of renderAtome() that was changed.
   const today = new Date();
   const rows = [];
   for (let i = 0; i < 12; i++) {
     const ref = new Date(today.getFullYear(), today.getMonth() + i, 1);
     const stmt = new Date(ref.getFullYear(), ref.getMonth(), s.atomeStatementDay || 10);
     const due = new Date(ref.getFullYear(), ref.getMonth(), s.atomeDueDay || 20);
+    const cyclePurchases = getTransactions()
+      .filter(t => sameText(t.type, 'Expense') && /atome/i.test(t.account) && parseDate(t.date) <= stmt)
+      .reduce((sum, t) => sum + Number(t.amount || 0), 0);
+    const cyclePayments = getTransfers()
+      .filter(t => sameText(t.transferType, 'Atome Payment') && /atome/i.test(t.toAccount) && parseDate(t.date) <= due)
+      .reduce((sum, t) => sum + Number(t.amount || 0), 0);
+    const cycleOutstanding = Math.max(cyclePurchases - cyclePayments, 0);
     let status = 'OPEN', cls = 'badge-set';
-    if (outstanding === 0) { status = 'PAID / NO BALANCE'; cls = 'badge-ok'; }
+    if (cycleOutstanding === 0) { status = 'PAID / NO BALANCE'; cls = 'badge-ok'; }
     else if (today > due) { status = 'PAST DUE'; cls = 'badge-over'; }
     else if (today >= stmt) { status = 'STATEMENT READY'; cls = 'badge-watch'; }
     rows.push(`<tr><td>${toLocalISODate(stmt)}</td><td>${toLocalISODate(due)}</td>
-      <td class="text-end">${fmt(outstanding)}</td><td><span class="badge ${cls}">${status}</span></td></tr>`);
+      <td class="text-end">${fmt(cycleOutstanding)}</td><td><span class="badge ${cls}">${status}</span></td></tr>`);
   }
   document.querySelector('#atomeTable tbody').innerHTML = rows.join('');
 }
