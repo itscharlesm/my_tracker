@@ -156,18 +156,6 @@ index:
         <div class="col-12">
           <div class="card h-100">
             <div class="card-body">
-              <h6 class="card-title"><i class="bi bi-trophy"></i> <span id="topCategoriesTitle">Top Spending
-                  Categories</span></h6>
-              <div id="topCategoriesList"></div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="row g-3 mb-3">
-        <div class="col-12">
-          <div class="card h-100">
-            <div class="card-body">
               <h6 class="card-title"><i class="bi bi-bar-chart-line"></i> <span id="monthlyChartTitle">Income vs
                   Expenses by Month</span></h6>
               <canvas id="chartMonthly" height="200"></canvas>
@@ -2066,50 +2054,9 @@ renderDashboard();
     });
   }
 
-  // Top 5 expense categories for the currently selected dashboard period,
-  // shown as a ranked list with a share-of-total progress bar each.
-  function renderTopCategories(year, month, week) {
-    const titleEl = document.getElementById('topCategoriesTitle');
-    if (titleEl) {
-      titleEl.textContent = month === 'All'
-        ? 'Top Spending Categories'
-        : `Top Spending Categories — ${month} ${year}${week !== 'All' ? ' • Week ' + week : ''}`;
-    }
-    const txns = getTransactions().filter(t => {
-      if (String(deriveYear(t.date)) !== String(year)) return false;
-      if (month !== 'All' && deriveMonthName(t.date) !== month) return false;
-      if (week !== 'All' && String(deriveWeekOfMonth(t.date)) !== String(week)) return false;
-      return t.type === 'Expense';
-    });
-    const byCat = {};
-    txns.forEach(t => { byCat[t.category] = (byCat[t.category] || 0) + Number(t.amount || 0); });
-    const total = Object.values(byCat).reduce((s, v) => s + v, 0);
-    const top = Object.keys(byCat)
-      .map(c => ({ category: c, amount: byCat[c] }))
-      .sort((a, b) => b.amount - a.amount)
-      .slice(0, 5);
-
-    const list = document.getElementById('topCategoriesList');
-    if (!top.length) {
-      list.innerHTML = '<p class="text-muted small mb-0">No expenses in this period.</p>';
-      return;
-    }
-    list.innerHTML = top.map((row, i) => {
-      const pct = total ? (row.amount / total * 100) : 0;
-      return `<div class="top-cat-row">
-        <span class="top-cat-rank">${i + 1}</span>
-        <div class="top-cat-info">
-          <div class="top-cat-name-row"><span>${row.category}</span><span class="amt">${fmt(row.amount)}</span></div>
-          <div class="progress" style="height:8px"><div class="progress-bar" style="width:${pct.toFixed(0)}%"></div></div>
-        </div>
-      </div>`;
-    }).join('');
-  }
-
   function renderDashboardExtras() {
     const { year, month, week } = currentDashFilters();
     renderNetTrend(year, month, week);
-    renderTopCategories(year, month, week);
   }
 
   // Wrap (not replace) the existing dashboard renderer so page navigation
@@ -3234,57 +3181,6 @@ textarea:focus-visible {
   .passbook-hero .ph-net {
     font-size: 1.7rem;
   }
-}
-
-/* =========================================================================
-   ADDED: Top Spending Categories mini leaderboard (new dashboard section).
-   Purely additive rules — nothing above this block was changed.
-   ========================================================================= */
-.top-cat-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 14px;
-}
-
-.top-cat-row:last-child {
-  margin-bottom: 0;
-}
-
-.top-cat-rank {
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  background: var(--brand-light);
-  color: var(--brand-dark);
-  font-size: .7rem;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  font-family: var(--font-mono);
-}
-
-.top-cat-info {
-  flex: 1;
-  min-width: 0;
-}
-
-.top-cat-name-row {
-  display: flex;
-  justify-content: space-between;
-  gap: 8px;
-  font-size: .82rem;
-  font-weight: 600;
-  color: var(--ink);
-  margin-bottom: 5px;
-}
-
-.top-cat-name-row .amt {
-  font-family: var(--font-mono);
-  color: var(--expense);
-  flex-shrink: 0;
 }
 
 /* =========================================================================

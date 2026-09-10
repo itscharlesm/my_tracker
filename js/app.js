@@ -1410,3 +1410,96 @@ renderDashboard();
 
   renderStatSubs();
 })();
+
+/* =========================================================================
+   ADDED: dynamic period labels for Income/Expenses by Category cards, plus
+   interactive category totals — clicking a legend entry (e.g. "Work") to
+   hide/show its slice now also recalculates "Total: X" from only the
+   currently-visible slices, and shows a strike-through on the clicked
+   label (Chart.js draws this automatically once `hidden` is present on
+   the generated label). Reuses chartCategory / chartIncomeCategory and the
+   existing dashYear/dashMonth/dashWeek filters — wraps render.dashboard
+   again and does not modify a single existing line, function, or comment
+   anywhere above.
+
+   Requires two small additive spans in index.html:
+   <span id="incomeCatPeriodLabel"> and <span id="expenseCatPeriodLabel">
+   placed right after "Income by Category" / "Expenses by Category".
+   ========================================================================= */
+(function () {
+  function categoryPeriodLabel() {
+    const year = document.getElementById('dashYear').value;
+    const month = document.getElementById('dashMonth').value;
+    const week = document.getElementById('dashWeek').value;
+    if (month === 'All') return `(${year})`;
+    return `(${month} ${year}${week !== 'All' ? ' | Week ' + week : ''})`;
+  }
+
+  function renderCategoryPeriodLabels() {
+    const label = categoryPeriodLabel();
+    const incEl = document.getElementById('incomeCatPeriodLabel');
+    const expEl = document.getElementById('expenseCatPeriodLabel');
+    if (incEl) incEl.textContent = label;
+    if (expEl) expEl.textContent = label;
+  }
+
+  function updateCategoryChartTotal(chart, totalElId) {
+    if (!chart) return;
+    const ds = chart.data.datasets[0];
+    let total = 0;
+    chart.data.labels.forEach((_, i) => {
+      if (chart.getDataVisibility(i)) total += Number(ds.data[i]) || 0;
+    });
+    const el = document.getElementById(totalElId);
+    if (el) el.textContent = 'Total: ' + fmt(total);
+  }
+
+  function interactiveGenerateLabels(chart) {
+    const ds = chart.data.datasets[0];
+    return chart.data.labels.map((label, i) => ({
+      text: `${label}: ${fmt(ds.data[i])}`,
+      fillStyle: ds.backgroundColor[i],
+      strokeStyle: ds.backgroundColor[i],
+      hidden: !chart.getDataVisibility(i),
+      index: i
+    }));
+  }
+
+  function patchCategoryChart(chart, totalElId) {
+    if (!chart) return;
+    chart.options.plugins.legend.labels.generateLabels = interactiveGenerateLabels;
+    chart.options.plugins.legend.onClick = function (e, legendItem, legend) {
+      const ci = legend.chart;
+      ci.toggleDataVisibility(legendItem.index);
+      updateCategoryChartTotal(ci, totalElId);
+      ci.update();
+    };
+    updateCategoryChartTotal(chart, totalElId);
+    chart.update();
+  }
+
+  function renderCategoryExtras() {
+    renderCategoryPeriodLabels();
+    patchCategoryChart(chartCategory, 'totalExpenseCategory');
+    patchCategoryChart(chartIncomeCategory, 'totalIncomeCategory');
+  }
+
+  const _origRenderDashboardForCategoryExtras = render.dashboard;
+  render.dashboard = function () {
+    _origRenderDashboardForCategoryExtras();
+    renderCategoryExtras();
+  };
+
+  // FIXED: filter changes now re-run renderCategoryExtras() (which patches
+  // the freshly-recreated chartCategory / chartIncomeCategory instances
+  // with the interactive legend + total-recalculation behavior), instead
+  // of only renderCategoryPeriodLabels(). Previously, changing Year/Month/
+  // Week destroyed and rebuilt both doughnut charts with Chart.js defaults
+  // (see renderDashboard()'s `if (chartCategory) chartCategory.destroy();`
+  // + `new Chart(...)` calls), which wiped out the click-to-toggle/total
+  // behavior until the next full patch — this line restores it every time.
+  ['dashYear', 'dashMonth', 'dashWeek'].forEach(id =>
+    document.getElementById(id).addEventListener('change', renderCategoryExtras));
+
+  renderCategoryExtras();
+})();
