@@ -1015,3 +1015,33 @@ textarea:focus-visible {
 .stat-sub.negative {
   color: var(--expense);
 }
+
+/* =========================================================================
+   ADDED: Weekly / Monthly checkbox column (Budget tab) and Weekly/Monthly
+   group headers inside the dashboard's Budget Performance report list.
+   Purely additive — reuses existing tokens and .budget-rep-row styling
+   already defined above; only new selectors are introduced here, nothing
+   existing is changed.
+   ========================================================================= */
+#budgetTable td[data-added="weekly"] {
+  text-align: center;
+}
+
+#budgetTable td[data-added="weekly"] input[type="checkbox"] {
+  width: 1.1em;
+  height: 1.1em;
+  cursor: pointer;
+}
+
+.budget-rep-group-title {
+  font-size: .66rem;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  font-weight: 700;
+  color: var(--muted);
+  margin: 14px 0 6px;
+}
+
+.budget-rep-group-title:first-child {
+  margin-top: 0;
+}

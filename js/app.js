@@ -1585,3 +1585,216 @@ renderDashboard();
 
   renderDailyBreakdown();
 })();
+
+/* =========================================================================
+   ADDED: Weekly / Monthly checkbox column for the Budget tab. A budget row
+   checked here is a "Weekly" budget (recurring, meant to be spread across
+   the weeks of its month — e.g. Food); left unchecked it's a "Monthly"
+   budget (a whole-month amount that shouldn't be divided per week — e.g.
+   Subscription, Gym Membership). This flag is read by the Budget
+   Performance report on the dashboard to decide whether that category's
+   budgeted amount gets divided across weeks when a specific Week is
+   selected.
+
+   Purely additive: it does not modify a single existing line, function, or
+   comment above (including renderBudget itself). It wraps renderBudget the
+   same way the earlier "ADDED: Payroll — Holiday and Incentive columns"
+   block wraps renderPayroll, and it reuses the existing helper functions
+   (getBudget, set, LS_KEYS). It relies on the new "Weekly" <th> placed
+   right after the existing "Budget" <th> in the #budgetTable header in
+   index.html.
+   ========================================================================= */
+function updateBudgetWeekly(id, checked) {
+  const list = getBudget();
+  const row = list.find(r => r.id === id);
+  if (row) row.weekly = !!checked;
+  set(LS_KEYS.budget, list);
+  renderBudget();
+}
+(function () {
+  function currentBudgetRowsForWeeklyColumn() {
+    const year = Number(document.getElementById('budgetYear').value);
+    const month = document.getElementById('budgetMonth').value;
+    // renderBudget() (which already ran by the time this wrapper runs) has
+    // already auto-created a row for every expense category for this
+    // year/month, so filtering getBudget() here lines up 1-for-1, in the
+    // same order, with the rows renderBudget() just drew into the table.
+    return getBudget().filter(b => Number(b.year) === year && b.month === month);
+  }
+
+  function addBudgetWeeklyColumn() {
+    const bodyRows = Array.from(document.querySelectorAll('#budgetTable tbody tr'));
+    const dataRows = currentBudgetRowsForWeeklyColumn();
+    bodyRows.forEach((tr, i) => {
+      const r = dataRows[i];
+      if (!r) return;
+      // Guard against double-inserting if this ever runs twice on the same
+      // row (e.g. re-render race): remove any previously-added cell first.
+      tr.querySelectorAll('td[data-added="weekly"]').forEach(td => td.remove());
+      const tds = tr.querySelectorAll('td');
+      const budgetTd = tds[1]; // [Category, Budget input, Actual, Remaining, Used %, Status]
+      if (!budgetTd) return;
+      const weeklyTd = document.createElement('td');
+      weeklyTd.dataset.added = 'weekly';
+      weeklyTd.innerHTML = `<input type="checkbox" class="form-check-input" ${r.weekly ? 'checked' : ''} onchange="updateBudgetWeekly(${r.id}, this.checked)">`;
+      budgetTd.after(weeklyTd);
+    });
+  }
+
+  const _origRenderBudgetForWeeklyColumn = renderBudget;
+  renderBudget = function () {
+    _origRenderBudgetForWeeklyColumn();
+    addBudgetWeeklyColumn();
+  };
+  render.budget = renderBudget;
+
+  // FIXED-FOR-SAFETY: initBudgetFilters() bound its Year/Month 'change'
+  // listeners directly to the ORIGINAL renderBudget function reference
+  // before this wrapper existed, so those two listeners alone would still
+  // call the unwrapped version and drop this column. Adding our own
+  // listeners here (registered after theirs, so they fire after) keeps the
+  // column present no matter which path triggers a re-render.
+  ['budgetYear', 'budgetMonth'].forEach(id =>
+    document.getElementById(id).addEventListener('change', addBudgetWeeklyColumn));
+})();
+
+/* =========================================================================
+   ADDED: split the dashboard's Budget Performance report into "Weekly" and
+   "Monthly" groups, based on each budget category's new Weekly checkbox
+   (see the block above). Weekly-flagged categories keep the existing
+   behavior of dividing their monthly budgeted amount across the weeks of
+   the month once a specific Week is selected; Monthly-flagged categories
+   (e.g. a subscription, a one-time monthly payment) always keep their full
+   month's budgeted amount and full month's actual spend, regardless of
+   which Week is selected on the dashboard, since a whole-month amount
+   isn't meant to be spread across weeks.
+
+   Purely additive — it does not modify a single existing line, function,
+   or comment above, including the earlier "ADDED: Budget Performance
+   report (dashboard)" block; it simply runs after it (by wrapping the
+   render.dashboard function again) and overwrites #budgetReportSummary /
+   #budgetReportList with the corrected, grouped output. It reuses the
+   existing helper functions (getBudget, getTransactions, deriveYear,
+   deriveMonthName, deriveWeekOfMonth, weeksInMonthCount, sameText, fmt,
+   fmtPct) and the existing .budget-rep-* CSS classes, plus the new
+   .budget-rep-group-title class.
+   ========================================================================= */
+(function () {
+  function currentDashFiltersForBudgetSplit() {
+    return {
+      year: document.getElementById('dashYear').value,
+      month: document.getElementById('dashMonth').value,
+      week: document.getElementById('dashWeek').value,
+    };
+  }
+
+  function categoryActualForPeriodSplit(category, year, month, week) {
+    return getTransactions()
+      .filter(t => sameText(t.type, 'Expense') && sameText(t.category, category))
+      .filter(t => String(deriveYear(t.date)) === String(year))
+      .filter(t => month === 'All' || deriveMonthName(t.date) === month)
+      .filter(t => week === 'All' || String(deriveWeekOfMonth(t.date)) === String(week))
+      .reduce((s, t) => s + Number(t.amount || 0), 0);
+  }
+
+  function budgetedRowsForPeriodSplit(year, month) {
+    return getBudget().filter(b =>
+      String(b.year) === String(year) &&
+      Number(b.amount) > 0 &&
+      (month === 'All' || b.month === month));
+  }
+
+  function buildGroupItems(rows, year, month, week, weeklyFlag) {
+    const byCategory = {};
+    rows.filter(r => !!r.weekly === weeklyFlag).forEach(r => {
+      byCategory[r.category] = (byCategory[r.category] || 0) + Number(r.amount || 0);
+    });
+    // Only Weekly categories get divided across the weeks of the month once
+    // a specific Week is picked — same trigger the original block used.
+    if (weeklyFlag && week !== 'All' && month !== 'All') {
+      const weekCount = weeksInMonthCount(Number(year), month) || 1;
+      Object.keys(byCategory).forEach(cat => { byCategory[cat] = byCategory[cat] / weekCount; });
+    }
+    // Monthly categories ignore the Week filter entirely — their actual
+    // spend is always the whole month's, matching their whole-month budget.
+    const effectiveWeek = weeklyFlag ? week : 'All';
+    return Object.keys(byCategory).map(cat => {
+      const budgeted = byCategory[cat];
+      const actual = categoryActualForPeriodSplit(cat, year, month, effectiveWeek);
+      const remaining = budgeted - actual;
+      const used = budgeted > 0 ? actual / budgeted : 0;
+      let status = 'ON TRACK', cls = 'badge-ok';
+      if (remaining < 0) { status = 'OVER BUDGET'; cls = 'badge-over'; }
+      else if (used >= 0.8) { status = 'WATCH'; cls = 'badge-watch'; }
+      return { cat, budgeted, actual, remaining, used, status, cls };
+    }).sort((a, b) => b.used - a.used);
+  }
+
+  function renderGroupHtml(title, items) {
+    if (!items.length) return '';
+    const rowsHtml = items.map(it => `
+      <div class="budget-rep-row">
+        <div class="budget-rep-row-top">
+          <span class="budget-rep-cat">${it.cat}</span>
+          <span class="badge ${it.cls}">${it.status}</span>
+        </div>
+        <div class="progress" style="height:10px">
+          <div class="progress-bar ${it.remaining < 0 ? '' : 'bg-success'}" style="width:${Math.min(it.used * 100, 100).toFixed(0)}%;${it.remaining < 0 ? 'background:var(--expense);' : ''}"></div>
+        </div>
+        <div class="budget-rep-row-bottom">
+          <span>${fmt(it.actual)} of ${fmt(it.budgeted)}</span>
+          <span class="${it.remaining < 0 ? 'text-danger' : ''}">${fmtPct(it.used)}</span>
+        </div>
+      </div>`).join('');
+    return `<div class="budget-rep-group-title">${title}</div>${rowsHtml}`;
+  }
+
+  function renderBudgetReportSplit() {
+    const { year, month, week } = currentDashFiltersForBudgetSplit();
+    const listEl = document.getElementById('budgetReportList');
+    const summaryEl = document.getElementById('budgetReportSummary');
+    if (!listEl || !summaryEl) return;
+
+    const rows = budgetedRowsForPeriodSplit(year, month);
+    if (!rows.length) return; // leave the original "no budgeted categories yet" message as-is
+
+    const weeklyItems = buildGroupItems(rows, year, month, week, true);
+    const monthlyItems = buildGroupItems(rows, year, month, week, false);
+
+    listEl.innerHTML = renderGroupHtml('Weekly', weeklyItems) + renderGroupHtml('Monthly', monthlyItems);
+
+    let totalBudgeted = 0, totalActual = 0;
+    [...weeklyItems, ...monthlyItems].forEach(it => { totalBudgeted += it.budgeted; totalActual += it.actual; });
+    const totalRemaining = totalBudgeted - totalActual;
+    summaryEl.innerHTML = `
+      <div class="col-4">
+        <div class="budget-rep-stat">
+          <div class="budget-rep-stat-label">Budgeted</div>
+          <div class="budget-rep-stat-value">${fmt(totalBudgeted)}</div>
+        </div>
+      </div>
+      <div class="col-4">
+        <div class="budget-rep-stat">
+          <div class="budget-rep-stat-label">Spent</div>
+          <div class="budget-rep-stat-value ${totalRemaining < 0 ? 'text-danger' : ''}">${fmt(totalActual)}</div>
+        </div>
+      </div>
+      <div class="col-4">
+        <div class="budget-rep-stat">
+          <div class="budget-rep-stat-label">${totalRemaining < 0 ? 'Over by' : 'Remaining'}</div>
+          <div class="budget-rep-stat-value ${totalRemaining < 0 ? 'text-danger' : 'text-success'}">${fmt(Math.abs(totalRemaining))}</div>
+        </div>
+      </div>`;
+  }
+
+  const _origRenderDashboardForBudgetSplit = render.dashboard;
+  render.dashboard = function () {
+    _origRenderDashboardForBudgetSplit();
+    renderBudgetReportSplit();
+  };
+
+  ['dashYear', 'dashMonth', 'dashWeek'].forEach(id =>
+    document.getElementById(id).addEventListener('change', renderBudgetReportSplit));
+
+  renderBudgetReportSplit();
+})();
