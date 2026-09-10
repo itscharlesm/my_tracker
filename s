@@ -55,30 +55,46 @@ index:
       </div>
 
       <div class="row g-2 my-3">
-        <div class="col-4">
-          <div class="card stat-card stat-income h-100">
+        <div class="col-6 col-md-3">
+          <div class="card stat-card stat-today h-100">
             <div class="card-body">
-              <div class="stat-icon"><i class="bi bi-arrow-down-left"></i></div>
-              <div class="stat-label">Income</div>
-              <div class="stat-value" id="statIncome">0</div>
+              <div class="stat-icon"><i class="bi bi-calendar-check"></i></div>
+              <div class="stat-label">Today</div>
+              <div class="stat-value" id="statTodayNet">0</div>
+              <div class="stat-today-sub">
+                <span class="in" id="statTodayIncome">In 0</span>
+                <span class="out" id="statTodayExpense">Out 0</span>
+              </div>
             </div>
           </div>
         </div>
-        <div class="col-4">
-          <div class="card stat-card stat-expense h-100">
-            <div class="card-body">
-              <div class="stat-icon"><i class="bi bi-arrow-up-right"></i></div>
-              <div class="stat-label">Expenses</div>
-              <div class="stat-value" id="statExpense">0</div>
-            </div>
-          </div>
-        </div>
-        <div class="col-4">
+        <div class="col-6 col-md-3">
           <div class="card stat-card stat-savings h-100">
             <div class="card-body">
               <div class="stat-icon"><i class="bi bi-piggy-bank"></i></div>
               <div class="stat-label">Savings</div>
               <div class="stat-value" id="statSavings">0%</div>
+              <div class="stat-sub" id="statSavingsSub">Net 0</div>
+            </div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="card stat-card stat-income h-100">
+            <div class="card-body">
+              <div class="stat-icon"><i class="bi bi-arrow-down-left"></i></div>
+              <div class="stat-label">Income</div>
+              <div class="stat-value" id="statIncome">0</div>
+              <div class="stat-sub" id="statIncomeSub">0 entries</div>
+            </div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="card stat-card stat-expense h-100">
+            <div class="card-body">
+              <div class="stat-icon"><i class="bi bi-arrow-up-right"></i></div>
+              <div class="stat-label">Expenses</div>
+              <div class="stat-value" id="statExpense">0</div>
+              <div class="stat-sub" id="statExpenseSub">0 entries</div>
             </div>
           </div>
         </div>
@@ -1910,6 +1926,66 @@ textarea:focus-visible {
   font-family: var(--font-mono);
 }
 
+/* =========================================================================
+   ADDED: "Today" stat card colors and income/expense sub-line.
+   Purely additive — nothing above this block was changed.
+   ========================================================================= */
+.stat-today {
+  border-left-color: var(--info);
+}
+
+.stat-today .stat-icon {
+  background: var(--info-bg);
+  color: var(--info);
+}
+
+.stat-today .stat-value.positive {
+  color: var(--income);
+}
+
+.stat-today .stat-value.negative {
+  color: var(--expense);
+}
+
+.stat-today-sub {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 6px;
+  font-family: var(--font-mono);
+  font-size: .68rem;
+  font-weight: 600;
+}
+
+.stat-today-sub .in {
+  color: var(--income);
+}
+
+.stat-today-sub .out {
+  color: var(--expense);
+}
+
+/* =========================================================================
+   ADDED: generic sub-line for Income/Expenses/Savings cards, so all 4
+   dashboard stat cards carry the same visual weight as the Today card.
+   Purely additive — nothing above this block was changed.
+   ========================================================================= */
+.stat-sub {
+  margin-top: 6px;
+  font-family: var(--font-mono);
+  font-size: .68rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.stat-sub.positive {
+  color: var(--income);
+}
+
+.stat-sub.negative {
+  color: var(--expense);
+}
+
 app.js:
 /* =========================================================================
    MONEY TRACKER — app.js
@@ -3216,6 +3292,89 @@ renderDashboard();
     document.getElementById(id).addEventListener('change', renderBudgetReport));
 
   renderBudgetReport();
+})();
+
+/* =========================================================================
+   ADDED: "Today" stat card (dashboard) — shows today's income, expenses,
+   and net cashflow, regardless of the dashboard's Year/Month/Week filter.
+   Purely additive — does not modify a single existing line above.
+   ========================================================================= */
+(function () {
+  function renderTodayCard() {
+    const todayStr = toLocalISODate(new Date());
+    const todaysTxns = getTransactions().filter(t => t.date === todayStr);
+    const income = todaysTxns.filter(t => t.type === 'Income').reduce((s, t) => s + Number(t.amount || 0), 0);
+    const expense = todaysTxns.filter(t => t.type === 'Expense').reduce((s, t) => s + Number(t.amount || 0), 0);
+    const net = income - expense;
+
+    const netEl = document.getElementById('statTodayNet');
+    netEl.textContent = fmt(net);
+    netEl.classList.toggle('positive', net >= 0);
+    netEl.classList.toggle('negative', net < 0);
+
+    document.getElementById('statTodayIncome').textContent = 'In ' + fmt(income);
+    document.getElementById('statTodayExpense').textContent = 'Out ' + fmt(expense);
+  }
+
+  const _origRenderDashboardForToday = render.dashboard;
+  render.dashboard = function () {
+    _origRenderDashboardForToday();
+    renderTodayCard();
+  };
+
+  renderTodayCard();
+})();
+
+/* =========================================================================
+   ADDED: sub-line text for Income / Expenses / Savings cards (entry counts,
+   average per entry, and net amount) so they visually match the Today
+   card. Reuses the same period-filter logic as the existing dashboard
+   (dashYear/dashMonth/dashWeek), wraps render.dashboard again — does not
+   modify a single existing line above.
+   ========================================================================= */
+(function () {
+  function periodTxns(year, month, week) {
+    return getTransactions().filter(t => {
+      if (String(deriveYear(t.date)) !== String(year)) return false;
+      if (month !== 'All' && deriveMonthName(t.date) !== month) return false;
+      if (week !== 'All' && String(deriveWeek(t.date)) !== String(week)) return false;
+      return true;
+    });
+  }
+
+  function renderStatSubs() {
+    const year = document.getElementById('dashYear').value;
+    const month = document.getElementById('dashMonth').value;
+    const week = document.getElementById('dashWeek').value;
+    const txns = periodTxns(year, month, week);
+
+    const incomeTxns = txns.filter(t => t.type === 'Income');
+    const expenseTxns = txns.filter(t => t.type === 'Expense');
+    const income = incomeTxns.reduce((s, t) => s + Number(t.amount || 0), 0);
+    const expense = expenseTxns.reduce((s, t) => s + Number(t.amount || 0), 0);
+    const net = income - expense;
+
+    document.getElementById('statIncomeSub').textContent =
+      `${incomeTxns.length} entries · avg ${fmt(incomeTxns.length ? income / incomeTxns.length : 0)}`;
+    document.getElementById('statExpenseSub').textContent =
+      `${expenseTxns.length} entries · avg ${fmt(expenseTxns.length ? expense / expenseTxns.length : 0)}`;
+
+    const savingsSub = document.getElementById('statSavingsSub');
+    savingsSub.textContent = `Net ${fmt(net)}`;
+    savingsSub.classList.toggle('positive', net >= 0);
+    savingsSub.classList.toggle('negative', net < 0);
+  }
+
+  const _origRenderDashboardForSubs = render.dashboard;
+  render.dashboard = function () {
+    _origRenderDashboardForSubs();
+    renderStatSubs();
+  };
+
+  ['dashYear', 'dashMonth', 'dashWeek'].forEach(id =>
+    document.getElementById(id).addEventListener('change', renderStatSubs));
+
+  renderStatSubs();
 })();
 
 seed-data.js:
