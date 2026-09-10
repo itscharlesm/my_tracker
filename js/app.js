@@ -1096,6 +1096,48 @@ renderDashboard();
     }).join('');
   }
 
+  // Distribution of current balances across all accounts (reuses the
+  // existing accountBalance() formula, same one used on the Accounts page).
+  function renderAccountDistribution() {
+    const accounts = getAccounts().filter(a => !/atome/i.test(a.account));
+    const labels = accounts.map(a => a.account);
+    const balances = accounts.map(a => Math.max(accountBalance(a.account), 0));
+    const total = balances.reduce((s, v) => s + v, 0);
+    document.getElementById('totalAccountBalance').textContent = 'Total: ' + fmt(total);
+
+    const ctx = document.getElementById('chartAccountDistribution').getContext('2d');
+    if (chartAccountDistribution) chartAccountDistribution.destroy();
+    chartAccountDistribution = new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        labels,
+        datasets: [{
+          data: balances,
+          backgroundColor: ['#1f6f57', '#cf8a34', '#3f6fa8', '#8a5ca8', '#bf4632', '#4f9e94', '#b25a8c', '#7a8a3e'],
+          borderColor: '#fffdf9', borderWidth: 2
+        }]
+      },
+      options: {
+        responsive: true, cutout: '62%',
+        plugins: {
+          legend: {
+            position: 'right', labels: {
+              boxWidth: 12, font: { size: 10, family: "'Inter', sans-serif" }, generateLabels: (chart) => {
+                const ds = chart.data.datasets[0];
+                return chart.data.labels.map((label, i) => ({
+                  text: `${label}: ${fmt(ds.data[i])}`,
+                  fillStyle: ds.backgroundColor[i],
+                  strokeStyle: ds.backgroundColor[i],
+                  index: i
+                }));
+              }
+            }
+          }
+        }
+      }
+    });
+  }
+
   function renderDashboardExtras() {
     const { year, month, week } = currentDashFilters();
     renderNetTrend(year);
