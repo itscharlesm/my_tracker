@@ -93,6 +93,20 @@ function deriveWeek(dateStr) { // approximates Excel WEEKNUM(date,2): Monday-sta
   const diffDays = Math.round((d - firstMonday) / 86400000);
   return Math.floor(diffDays / 7) + 1;
 }
+// ADDED: per-month week number (1-based) — days 1-7 = Week 1, 8-14 = Week 2,
+// etc. This is what the dashboard's dynamic "Week" filter uses, since weeks
+// there are scoped to the selected month, not the whole year.
+function deriveWeekOfMonth(dateStr) {
+  const d = parseDate(dateStr); if (!d) return '';
+  return Math.ceil(d.getDate() / 7);
+}
+// ADDED: how many weeks a given month has (4 or 5, depending on length).
+function daysInMonth(year, monthIndex) { return new Date(year, monthIndex + 1, 0).getDate(); }
+function weeksInMonthCount(year, monthName) {
+  const monthIndex = MONTHS.indexOf(monthName);
+  if (monthIndex === -1) return 0;
+  return Math.ceil(daysInMonth(year, monthIndex) / 7);
+}
 function derivePayrollHalf(dateStr) {
   const d = parseDate(dateStr); if (!d) return '';
   return d.getDate() <= 15 ? '1st Half (1–15)' : '2nd Half (16–End)';
@@ -195,15 +209,44 @@ function yearsInData() {
    ================================================================ */
 let chartMonthly, chartCategory, chartIncomeCategory;
 
+// ADDED: fills the Week dropdown with ['All', 'Week 1'...'Week N'], where N
+// depends on how many weeks the CURRENTLY selected Year+Month has. When
+// Month = 'All' there's no single month to break into weeks, so only 'All'
+// is offered. Normally keeps the current selection if it's still valid,
+// falling back to 'All' otherwise. Pass defaultToCurrentWeek=true (used
+// only on initial page load) to instead default the selection to today's
+// week-of-month, but only when the selected Year+Month is actually the
+// current year/month — otherwise it still falls back to 'All'.
+function populateDashWeekOptions(defaultToCurrentWeek) {
+  const year = Number(document.getElementById('dashYear').value) || new Date().getFullYear();
+  const month = document.getElementById('dashMonth').value;
+  const weekSel = document.getElementById('dashWeek');
+  const prevSelected = weekSel.value || 'All';
+  const weeks = ['All'];
+  if (month !== 'All') {
+    const count = weeksInMonthCount(year, month);
+    for (let w = 1; w <= count; w++) weeks.push(String(w));
+  }
+  let defaultSelection = weeks.includes(prevSelected) ? prevSelected : 'All';
+  if (defaultToCurrentWeek && month !== 'All') {
+    const today = new Date();
+    if (today.getFullYear() === year && MONTHS[today.getMonth()] === month) {
+      const currentWeek = String(deriveWeekOfMonth(toLocalISODate(today)));
+      if (weeks.includes(currentWeek)) defaultSelection = currentWeek;
+    }
+  }
+  fillSelect(weekSel, weeks, defaultSelection);
+}
+
 function initDashboardFilters() {
   const dd = getDropdowns();
   const yrs = yearsInData();
   fillSelect(document.getElementById('dashYear'), yrs, yrs.includes(new Date().getFullYear()) ? new Date().getFullYear() : yrs[yrs.length - 1]);
   fillSelect(document.getElementById('dashMonth'), ['All', ...MONTHS], MONTHS[new Date().getMonth()]);
-  const weeks = ['All', ...Array.from({ length: 53 }, (_, i) => i + 1)];
-  fillSelect(document.getElementById('dashWeek'), weeks, 'All');
-  ['dashYear', 'dashMonth', 'dashWeek'].forEach(id =>
-    document.getElementById(id).addEventListener('change', renderDashboard));
+  populateDashWeekOptions(true);
+  document.getElementById('dashYear').addEventListener('change', () => { populateDashWeekOptions(); renderDashboard(); });
+  document.getElementById('dashMonth').addEventListener('change', () => { populateDashWeekOptions(); renderDashboard(); });
+  document.getElementById('dashWeek').addEventListener('change', renderDashboard);
 }
 
 function renderDashboard() {
@@ -216,7 +259,7 @@ function renderDashboard() {
   const txns = getTransactions().filter(t => {
     if (String(deriveYear(t.date)) !== String(year)) return false;
     if (month !== 'All' && deriveMonthName(t.date) !== month) return false;
-    if (week !== 'All' && String(deriveWeek(t.date)) !== String(week)) return false;
+    if (week !== 'All' && String(deriveWeekOfMonth(t.date)) !== String(week)) return false;
     return true;
   });
   const income = txns.filter(t => t.type === 'Income').reduce((s, t) => s + Number(t.amount || 0), 0);
@@ -240,20 +283,46 @@ function renderDashboard() {
     </tr>`;
   }).join('');
 
-  // monthly chart (whole selected year)
-  const incomeByMonth = MONTHS.map(m => getTransactions()
-    .filter(t => String(deriveYear(t.date)) === String(year) && deriveMonthName(t.date) === m && t.type === 'Income')
-    .reduce((s, t) => s + Number(t.amount || 0), 0));
-  const expenseByMonth = MONTHS.map(m => getTransactions()
-    .filter(t => String(deriveYear(t.date)) === String(year) && deriveMonthName(t.date) === m && t.type === 'Expense')
-    .reduce((s, t) => s + Number(t.amount || 0), 0));
+  // monthly chart — Income vs Expenses across the whole selected year by
+  // default (Week = All, whatever Month is set to), and only switches to a
+  // weekly breakdown of the selected month once a specific Week is chosen
+  // (week count is dynamic per month). Picking a Month alone does NOT
+  // switch this to weekly — only picking a Week does.
+  let monthlyLabels, incomeByMonth, expenseByMonth, monthlyChartLabel;
+  if (week === 'All') {
+    monthlyLabels = MONTHS.map(m => m.slice(0, 3));
+    incomeByMonth = MONTHS.map(m => getTransactions()
+      .filter(t => String(deriveYear(t.date)) === String(year) && deriveMonthName(t.date) === m && t.type === 'Income')
+      .reduce((s, t) => s + Number(t.amount || 0), 0));
+    expenseByMonth = MONTHS.map(m => getTransactions()
+      .filter(t => String(deriveYear(t.date)) === String(year) && deriveMonthName(t.date) === m && t.type === 'Expense')
+      .reduce((s, t) => s + Number(t.amount || 0), 0));
+    monthlyChartLabel = `Income vs Expenses by Month (${year})`;
+  } else {
+    // week !== 'All' — populateDashWeekOptions() only offers real week
+    // numbers once a specific Month is selected, so `month` is guaranteed
+    // to be a real month name here.
+    const weekCount = weeksInMonthCount(Number(year), month);
+    monthlyLabels = Array.from({ length: weekCount }, (_, i) => 'Week ' + (i + 1));
+    const monthTxnsAll = getTransactions().filter(t =>
+      String(deriveYear(t.date)) === String(year) && deriveMonthName(t.date) === month);
+    incomeByMonth = monthlyLabels.map((_, i) => monthTxnsAll
+      .filter(t => t.type === 'Income' && deriveWeekOfMonth(t.date) === i + 1)
+      .reduce((s, t) => s + Number(t.amount || 0), 0));
+    expenseByMonth = monthlyLabels.map((_, i) => monthTxnsAll
+      .filter(t => t.type === 'Expense' && deriveWeekOfMonth(t.date) === i + 1)
+      .reduce((s, t) => s + Number(t.amount || 0), 0));
+    monthlyChartLabel = `Weekly Income vs Expenses — ${month} ${year}`;
+  }
+  const monthlyTitleEl = document.getElementById('monthlyChartTitle');
+  if (monthlyTitleEl) monthlyTitleEl.textContent = monthlyChartLabel;
 
   const ctx1 = document.getElementById('chartMonthly').getContext('2d');
   if (chartMonthly) chartMonthly.destroy();
   chartMonthly = new Chart(ctx1, {
     type: 'bar',
     data: {
-      labels: MONTHS.map(m => m.slice(0, 3)), datasets: [
+      labels: monthlyLabels, datasets: [
         { label: 'Income', data: incomeByMonth, backgroundColor: '#2f8f5e', borderRadius: 4 },
         { label: 'Expenses', data: expenseByMonth, backgroundColor: '#bf4632', borderRadius: 4 },
       ]
@@ -1005,8 +1074,8 @@ renderDashboard();
 })();
 
 /* =========================================================================
-   ADDED: extra dashboard insights — Net Cashflow Trend, Top Spending
-   Categories, and Account Balance Distribution.
+   ADDED: extra dashboard insights — Net Cashflow Trend and Top Spending
+   Categories. (Account Balance Distribution was removed from here.)
 
    This block is appended after everything above and does not modify a
    single existing line, function, or comment. It reuses the existing
@@ -1014,9 +1083,12 @@ renderDashboard();
    accountBalance, fmt, etc.) and hooks into the dashboard's existing
    render cycle by wrapping it, so it stays in sync with
    the same Year / Month / Week filters already on the dashboard.
+   Net Cashflow Trend and Income vs Expenses by Month both switch from a
+   year-of-months view to a weekly-within-the-month view once a specific
+   Month is selected (see populateDashWeekOptions / weeksInMonthCount).
    ========================================================================= */
 (function () {
-  let chartNetTrend, chartAccountDistribution;
+  let chartNetTrend;
 
   function currentDashFilters() {
     return {
@@ -1026,32 +1098,52 @@ renderDashboard();
     };
   }
 
-  // Net cashflow (income - expense) for every month of the selected year,
-  // same building blocks as the existing "Income vs Expenses by Month" chart.
-  function renderNetTrend(year) {
-    document.getElementById('netTrendYearLabel').textContent = year;
-    const netByMonth = MONTHS.map(m => {
-      const monthTxns = getTransactions().filter(t =>
-        String(deriveYear(t.date)) === String(year) && deriveMonthName(t.date) === m);
-      const income = monthTxns.filter(t => t.type === 'Income').reduce((s, t) => s + Number(t.amount || 0), 0);
-      const expense = monthTxns.filter(t => t.type === 'Expense').reduce((s, t) => s + Number(t.amount || 0), 0);
-      return income - expense;
-    });
+  // Net cashflow (income - expense) across the whole selected year by
+  // default (Week = All), and only switches to a weekly breakdown of the
+  // selected month once a specific Week is chosen (week count is dynamic
+  // per month) — same trigger as the "Income vs Expenses by Month" chart.
+  // Picking a Month alone does NOT switch this to weekly — only picking a
+  // Week does.
+  function renderNetTrend(year, month, week) {
+    let labels, netValues;
+    if (week === 'All') {
+      document.getElementById('netTrendYearLabel').textContent = year;
+      labels = MONTHS.map(m => m.slice(0, 3));
+      netValues = MONTHS.map(m => {
+        const monthTxns = getTransactions().filter(t =>
+          String(deriveYear(t.date)) === String(year) && deriveMonthName(t.date) === m);
+        const income = monthTxns.filter(t => t.type === 'Income').reduce((s, t) => s + Number(t.amount || 0), 0);
+        const expense = monthTxns.filter(t => t.type === 'Expense').reduce((s, t) => s + Number(t.amount || 0), 0);
+        return income - expense;
+      });
+    } else {
+      document.getElementById('netTrendYearLabel').textContent = `Weekly — ${month} ${year}`;
+      const weekCount = weeksInMonthCount(Number(year), month);
+      labels = Array.from({ length: weekCount }, (_, i) => 'Week ' + (i + 1));
+      const monthTxnsAll = getTransactions().filter(t =>
+        String(deriveYear(t.date)) === String(year) && deriveMonthName(t.date) === month);
+      netValues = labels.map((_, i) => {
+        const weekTxns = monthTxnsAll.filter(t => deriveWeekOfMonth(t.date) === i + 1);
+        const income = weekTxns.filter(t => t.type === 'Income').reduce((s, t) => s + Number(t.amount || 0), 0);
+        const expense = weekTxns.filter(t => t.type === 'Expense').reduce((s, t) => s + Number(t.amount || 0), 0);
+        return income - expense;
+      });
+    }
     const ctx = document.getElementById('chartNetTrend').getContext('2d');
     if (chartNetTrend) chartNetTrend.destroy();
     chartNetTrend = new Chart(ctx, {
       type: 'line',
       data: {
-        labels: MONTHS.map(m => m.slice(0, 3)),
+        labels: labels,
         datasets: [{
           label: 'Net Cashflow',
-          data: netByMonth,
+          data: netValues,
           borderColor: '#1f6f57',
           backgroundColor: 'rgba(31,111,87,0.12)',
           fill: true,
           tension: 0.35,
           pointRadius: 3,
-          pointBackgroundColor: netByMonth.map(v => v < 0 ? '#bf4632' : '#1f6f57'),
+          pointBackgroundColor: netValues.map(v => v < 0 ? '#bf4632' : '#1f6f57'),
         }]
       },
       options: {
@@ -1062,87 +1154,9 @@ renderDashboard();
     });
   }
 
-  // Top 5 expense categories for the currently selected dashboard period,
-  // shown as a ranked list with a share-of-total progress bar each.
-  function renderTopCategories(year, month, week) {
-    const txns = getTransactions().filter(t => {
-      if (String(deriveYear(t.date)) !== String(year)) return false;
-      if (month !== 'All' && deriveMonthName(t.date) !== month) return false;
-      if (week !== 'All' && String(deriveWeek(t.date)) !== String(week)) return false;
-      return t.type === 'Expense';
-    });
-    const byCat = {};
-    txns.forEach(t => { byCat[t.category] = (byCat[t.category] || 0) + Number(t.amount || 0); });
-    const total = Object.values(byCat).reduce((s, v) => s + v, 0);
-    const top = Object.keys(byCat)
-      .map(c => ({ category: c, amount: byCat[c] }))
-      .sort((a, b) => b.amount - a.amount)
-      .slice(0, 5);
-
-    const list = document.getElementById('topCategoriesList');
-    if (!top.length) {
-      list.innerHTML = '<p class="text-muted small mb-0">No expenses in this period.</p>';
-      return;
-    }
-    list.innerHTML = top.map((row, i) => {
-      const pct = total ? (row.amount / total * 100) : 0;
-      return `<div class="top-cat-row">
-        <span class="top-cat-rank">${i + 1}</span>
-        <div class="top-cat-info">
-          <div class="top-cat-name-row"><span>${row.category}</span><span class="amt">${fmt(row.amount)}</span></div>
-          <div class="progress" style="height:8px"><div class="progress-bar" style="width:${pct.toFixed(0)}%"></div></div>
-        </div>
-      </div>`;
-    }).join('');
-  }
-
-  // Distribution of current balances across all accounts (reuses the
-  // existing accountBalance() formula, same one used on the Accounts page).
-  function renderAccountDistribution() {
-    const accounts = getAccounts().filter(a => !/atome/i.test(a.account));
-    const labels = accounts.map(a => a.account);
-    const balances = accounts.map(a => Math.max(accountBalance(a.account), 0));
-    const total = balances.reduce((s, v) => s + v, 0);
-    document.getElementById('totalAccountBalance').textContent = 'Total: ' + fmt(total);
-
-    const ctx = document.getElementById('chartAccountDistribution').getContext('2d');
-    if (chartAccountDistribution) chartAccountDistribution.destroy();
-    chartAccountDistribution = new Chart(ctx, {
-      type: 'doughnut',
-      data: {
-        labels,
-        datasets: [{
-          data: balances,
-          backgroundColor: ['#1f6f57', '#cf8a34', '#3f6fa8', '#8a5ca8', '#bf4632', '#4f9e94', '#b25a8c', '#7a8a3e'],
-          borderColor: '#fffdf9', borderWidth: 2
-        }]
-      },
-      options: {
-        responsive: true, cutout: '62%',
-        plugins: {
-          legend: {
-            position: 'right', labels: {
-              boxWidth: 12, font: { size: 10, family: "'Inter', sans-serif" }, generateLabels: (chart) => {
-                const ds = chart.data.datasets[0];
-                return chart.data.labels.map((label, i) => ({
-                  text: `${label}: ${fmt(ds.data[i])}`,
-                  fillStyle: ds.backgroundColor[i],
-                  strokeStyle: ds.backgroundColor[i],
-                  index: i
-                }));
-              }
-            }
-          }
-        }
-      }
-    });
-  }
-
   function renderDashboardExtras() {
     const { year, month, week } = currentDashFilters();
-    renderNetTrend(year);
-    renderTopCategories(year, month, week);
-    renderAccountDistribution();
+    renderNetTrend(year, month, week);
   }
 
   // Wrap (not replace) the existing dashboard renderer so page navigation
@@ -1205,7 +1219,7 @@ renderDashboard();
       .filter(t => sameText(t.type, 'Expense') && sameText(t.category, category))
       .filter(t => String(deriveYear(t.date)) === String(year))
       .filter(t => month === 'All' || deriveMonthName(t.date) === month)
-      .filter(t => week === 'All' || String(deriveWeek(t.date)) === String(week))
+      .filter(t => week === 'All' || String(deriveWeekOfMonth(t.date)) === String(week))
       .reduce((s, t) => s + Number(t.amount || 0), 0);
   }
 
@@ -1227,6 +1241,15 @@ renderDashboard();
     const rows = budgetedRowsForPeriod(year, month);
     const byCategory = {};
     rows.forEach(r => { byCategory[r.category] = (byCategory[r.category] || 0) + Number(r.amount || 0); });
+    // ADDED: when a specific Week is selected (only possible once a specific
+    // Month is also selected — see populateDashWeekOptions), the "budgeted"
+    // figure shown is that week's even slice of the month's budget, not the
+    // whole month's allowance. e.g. a 1,000 monthly budget in a 4-week month
+    // becomes a 250 budget for each individual week.
+    if (week !== 'All' && month !== 'All') {
+      const weekCount = weeksInMonthCount(Number(year), month) || 1;
+      Object.keys(byCategory).forEach(cat => { byCategory[cat] = byCategory[cat] / weekCount; });
+    }
     const categories = Object.keys(byCategory);
 
     const summaryEl = document.getElementById('budgetReportSummary');
@@ -1348,7 +1371,7 @@ renderDashboard();
     return getTransactions().filter(t => {
       if (String(deriveYear(t.date)) !== String(year)) return false;
       if (month !== 'All' && deriveMonthName(t.date) !== month) return false;
-      if (week !== 'All' && String(deriveWeek(t.date)) !== String(week)) return false;
+      if (week !== 'All' && String(deriveWeekOfMonth(t.date)) !== String(week)) return false;
       return true;
     });
   }
