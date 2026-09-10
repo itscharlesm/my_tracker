@@ -1798,3 +1798,214 @@ function updateBudgetWeekly(id, checked) {
 
   renderBudgetReportSplit();
 })();
+
+/* =========================================================================
+   ADDED: pace indicator for Weekly categories, "days left" note for
+   Monthly categories, and per-group (Weekly / Monthly) subtotal rows in
+   the dashboard's Budget Performance report.
+
+   - Weekly categories: when a specific Week is selected, shows "Day X of
+     Y · used Z%" and flags "AHEAD OF PACE" if the % of the weekly budget
+     already spent is running meaningfully ahead of how much of that week
+     has elapsed (today's date vs. the week's date range) — a simple
+     early-warning signal distinct from the OVER BUDGET / WATCH status.
+   - Monthly categories: shows how many days are left in the selected
+     month (using today's real date), since a whole-month budget like a
+     subscription can look "fine" while actually being due soon.
+   - Adds a small subtotal line (Budgeted / Spent) under each of the
+     "Weekly" and "Monthly" headings, on top of the existing grand total.
+
+   Purely additive — it does not modify a single existing line, function,
+   or comment above, including the previous "ADDED: split the dashboard's
+   Budget Performance report into Weekly and Monthly groups" block; it
+   simply runs after it (by wrapping render.dashboard again) and
+   overwrites #budgetReportList with the enhanced output. It reuses the
+   existing helper functions/data (getBudget, getTransactions, deriveYear,
+   deriveMonthName, deriveWeekOfMonth, weeksInMonthCount, daysInMonth,
+   parseDate, toLocalISODate, MONTHS, sameText, fmt, fmtPct) and the
+   existing .budget-rep-* CSS classes, plus the new ones above.
+   ========================================================================= */
+(function () {
+  function currentDashFiltersForPaceBlock() {
+    return {
+      year: document.getElementById('dashYear').value,
+      month: document.getElementById('dashMonth').value,
+      week: document.getElementById('dashWeek').value,
+    };
+  }
+
+  function categoryActualForPeriodPace(category, year, month, week) {
+    return getTransactions()
+      .filter(t => sameText(t.type, 'Expense') && sameText(t.category, category))
+      .filter(t => String(deriveYear(t.date)) === String(year))
+      .filter(t => month === 'All' || deriveMonthName(t.date) === month)
+      .filter(t => week === 'All' || String(deriveWeekOfMonth(t.date)) === String(week))
+      .reduce((s, t) => s + Number(t.amount || 0), 0);
+  }
+
+  function budgetedRowsForPeriodPace(year, month) {
+    return getBudget().filter(b =>
+      String(b.year) === String(year) &&
+      Number(b.amount) > 0 &&
+      (month === 'All' || b.month === month));
+  }
+
+  function buildGroupItemsPace(rows, year, month, week, weeklyFlag) {
+    const byCategory = {};
+    rows.filter(r => !!r.weekly === weeklyFlag).forEach(r => {
+      byCategory[r.category] = (byCategory[r.category] || 0) + Number(r.amount || 0);
+    });
+    if (weeklyFlag && week !== 'All' && month !== 'All') {
+      const weekCount = weeksInMonthCount(Number(year), month) || 1;
+      Object.keys(byCategory).forEach(cat => { byCategory[cat] = byCategory[cat] / weekCount; });
+    }
+    const effectiveWeek = weeklyFlag ? week : 'All';
+    return Object.keys(byCategory).map(cat => {
+      const budgeted = byCategory[cat];
+      const actual = categoryActualForPeriodPace(cat, year, month, effectiveWeek);
+      const remaining = budgeted - actual;
+      const used = budgeted > 0 ? actual / budgeted : 0;
+      let status = 'ON TRACK', cls = 'badge-ok';
+      if (remaining < 0) { status = 'OVER BUDGET'; cls = 'badge-over'; }
+      else if (used >= 0.8) { status = 'WATCH'; cls = 'badge-watch'; }
+      return { cat, budgeted, actual, remaining, used, status, cls };
+    }).sort((a, b) => b.used - a.used);
+  }
+
+  // Date range (inclusive) covered by a given week-of-month, mirrors the
+  // same math already used elsewhere for the daily breakdown.
+  function selectedWeekRange(year, month, week) {
+    const monthIndex = MONTHS.indexOf(month);
+    if (monthIndex === -1) return null;
+    const totalDays = daysInMonth(year, monthIndex);
+    const startDay = (Number(week) - 1) * 7 + 1;
+    const endDay = Math.min(startDay + 6, totalDays);
+    return {
+      start: new Date(year, monthIndex, startDay),
+      end: new Date(year, monthIndex, endDay),
+      totalDaysInWeek: endDay - startDay + 1,
+    };
+  }
+
+  function weeklyPaceHtml(year, month, week) {
+    if (week === 'All' || month === 'All') return '';
+    const range = selectedWeekRange(Number(year), month, week);
+    if (!range) return '';
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    let elapsedDays;
+    if (today < range.start) elapsedDays = 0;
+    else if (today > range.end) elapsedDays = range.totalDaysInWeek;
+    else elapsedDays = Math.floor((today - range.start) / 86400000) + 1;
+    const paceRatio = range.totalDaysInWeek ? elapsedDays / range.totalDaysInWeek : 0;
+    return { elapsedDays, totalDaysInWeek: range.totalDaysInWeek, paceRatio };
+  }
+
+  function renderGroupHtmlPace(title, items, paceInfo) {
+    if (!items.length) return '';
+    let totalBudgeted = 0, totalActual = 0;
+    const rowsHtml = items.map(it => {
+      totalBudgeted += it.budgeted;
+      totalActual += it.actual;
+      let paceHtml = '';
+      if (paceInfo) {
+        const aheadByMuch = it.used - paceInfo.paceRatio >= 0.15; // spent noticeably faster than week has elapsed
+        const noteCls = aheadByMuch ? 'ahead' : 'ontrack';
+        const noteText = aheadByMuch ? 'AHEAD OF PACE' : 'ON PACE';
+        paceHtml = `<div class="budget-rep-pace">
+          <span>Day ${paceInfo.elapsedDays} of ${paceInfo.totalDaysInWeek}</span>
+          <span class="budget-rep-pace-note ${noteCls}">${noteText}</span>
+        </div>`;
+      }
+      return `
+      <div class="budget-rep-row">
+        <div class="budget-rep-row-top">
+          <span class="budget-rep-cat">${it.cat}</span>
+          <span class="badge ${it.cls}">${it.status}</span>
+        </div>
+        <div class="progress" style="height:10px">
+          <div class="progress-bar ${it.remaining < 0 ? '' : 'bg-success'}" style="width:${Math.min(it.used * 100, 100).toFixed(0)}%;${it.remaining < 0 ? 'background:var(--expense);' : ''}"></div>
+        </div>
+        <div class="budget-rep-row-bottom">
+          <span>${fmt(it.actual)} of ${fmt(it.budgeted)}</span>
+          <span class="${it.remaining < 0 ? 'text-danger' : ''}">${fmtPct(it.used)}</span>
+        </div>
+        ${paceHtml}
+      </div>`;
+    }).join('');
+    const subtotalHtml = `<div class="budget-rep-subtotal"><span>${title} subtotal</span><span>${fmt(totalActual)} of ${fmt(totalBudgeted)}</span></div>`;
+    return `<div class="budget-rep-group-title">${title}</div>${rowsHtml}${subtotalHtml}`;
+  }
+
+  function monthlyDaysLeftNote(year, month) {
+    const monthIndex = MONTHS.indexOf(month);
+    if (monthIndex === -1) return '';
+    const today = new Date();
+    if (Number(year) !== today.getFullYear() || monthIndex !== today.getMonth()) {
+      const target = new Date(Number(year), monthIndex, 1);
+      return target < today
+        ? '<div class="budget-rep-monthly-note">Month ended</div>'
+        : '<div class="budget-rep-monthly-note">Month hasn\'t started</div>';
+    }
+    const total = daysInMonth(today.getFullYear(), today.getMonth());
+    const left = total - today.getDate();
+    return `<div class="budget-rep-monthly-note">${left} day${left === 1 ? '' : 's'} left in ${month}</div>`;
+  }
+
+  function renderMonthlyGroupHtmlPace(title, items, year, month) {
+    if (!items.length) return '';
+    let totalBudgeted = 0, totalActual = 0;
+    const daysLeftNote = (month !== 'All') ? monthlyDaysLeftNote(year, month) : '';
+    const rowsHtml = items.map(it => {
+      totalBudgeted += it.budgeted;
+      totalActual += it.actual;
+      return `
+      <div class="budget-rep-row">
+        <div class="budget-rep-row-top">
+          <span class="budget-rep-cat">${it.cat}</span>
+          <span class="badge ${it.cls}">${it.status}</span>
+        </div>
+        <div class="progress" style="height:10px">
+          <div class="progress-bar ${it.remaining < 0 ? '' : 'bg-success'}" style="width:${Math.min(it.used * 100, 100).toFixed(0)}%;${it.remaining < 0 ? 'background:var(--expense);' : ''}"></div>
+        </div>
+        <div class="budget-rep-row-bottom">
+          <span>${fmt(it.actual)} of ${fmt(it.budgeted)}</span>
+          <span class="${it.remaining < 0 ? 'text-danger' : ''}">${fmtPct(it.used)}</span>
+        </div>
+        ${daysLeftNote}
+      </div>`;
+    }).join('');
+    const subtotalHtml = `<div class="budget-rep-subtotal"><span>${title} subtotal</span><span>${fmt(totalActual)} of ${fmt(totalBudgeted)}</span></div>`;
+    return `<div class="budget-rep-group-title">${title}</div>${rowsHtml}${subtotalHtml}`;
+  }
+
+  function renderBudgetReportPaceEnhanced() {
+    const { year, month, week } = currentDashFiltersForPaceBlock();
+    const listEl = document.getElementById('budgetReportList');
+    if (!listEl) return;
+
+    const rows = budgetedRowsForPeriodPace(year, month);
+    if (!rows.length) return; // leave the existing "no budgeted categories yet" message as-is
+
+    const weeklyItems = buildGroupItemsPace(rows, year, month, week, true);
+    const monthlyItems = buildGroupItemsPace(rows, year, month, week, false);
+    const paceInfo = weeklyPaceHtml(year, month, week);
+
+    listEl.innerHTML =
+      renderGroupHtmlPace('Weekly', weeklyItems, paceInfo) +
+      renderMonthlyGroupHtmlPace('Monthly', monthlyItems, year, month);
+    // Grand-total summary cards above the list are left exactly as the
+    // earlier split block already computes and renders them.
+  }
+
+  const _origRenderDashboardForPaceBlock = render.dashboard;
+  render.dashboard = function () {
+    _origRenderDashboardForPaceBlock();
+    renderBudgetReportPaceEnhanced();
+  };
+
+  ['dashYear', 'dashMonth', 'dashWeek'].forEach(id =>
+    document.getElementById(id).addEventListener('change', renderBudgetReportPaceEnhanced));
+
+  renderBudgetReportPaceEnhanced();
+})();

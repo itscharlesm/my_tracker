@@ -449,14 +449,14 @@ textarea:focus-visible {
   margin-bottom: 14px;
 }
 
-.card-title::before {
+/* .card-title::before {
   content: "";
   width: 6px;
   height: 6px;
   border-radius: 50%;
   background: var(--accent);
   display: inline-block;
-}
+} */
 
 /* =========================================================================
    PASSBOOK HERO (dashboard summary)
@@ -1044,4 +1044,78 @@ textarea:focus-visible {
 
 .budget-rep-group-title:first-child {
   margin-top: 0;
+}
+
+/* =========================================================================
+   ADDED: pace indicator (Weekly categories), days-left note (Monthly
+   categories), and per-group subtotal rows in the Budget Performance
+   report. Purely additive — reuses existing tokens; only new selectors
+   are introduced here, nothing existing is changed.
+   ========================================================================= */
+.budget-rep-pace {
+  font-size: .7rem;
+  margin-top: 4px;
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.budget-rep-pace-note {
+  font-weight: 700;
+}
+
+.budget-rep-pace-note.ahead {
+  color: var(--expense);
+}
+
+.budget-rep-pace-note.ontrack {
+  color: var(--income);
+}
+
+.budget-rep-monthly-note {
+  font-size: .7rem;
+  color: var(--muted);
+  margin-top: 4px;
+}
+
+.budget-rep-subtotal {
+  display: flex;
+  justify-content: space-between;
+  font-size: .72rem;
+  font-weight: 700;
+  color: var(--ink-soft);
+  padding: 6px 0 10px;
+  border-bottom: 1px dashed var(--line-soft);
+  margin-bottom: 6px;
+  font-family: var(--font-mono);
+}
+
+.budget-rep-subtotal:last-of-type {
+  border-bottom: none;
+}
+
+/* =========================================================================
+   ADDED: fix "justified" look on mobile for card-title headers that mix
+   plain text with an embedded <span> (e.g. "Net Cashflow Trend (
+   <span>...</span>)"). Because .card-title is display:flex, these text
+   fragments and the span become separate flex items and can drift apart
+   on narrow screens, pushing the trailing ")" far to the right. This
+   switches just those specific headers to normal block text flow so they
+   wrap together as one left-aligned sentence, leaving .card-title's flex
+   layout untouched everywhere else (plain single-line titles still use it
+   normally). Purely additive — nothing above this block is changed.
+   ========================================================================= */
+h6.card-title:has(#netTrendYearLabel),
+h6.card-title:has(#budgetReportPeriodLabel),
+h6.card-title:has(#incomeCatPeriodLabel),
+h6.card-title:has(#expenseCatPeriodLabel) {
+  display: block;
+  text-align: left;
+}
+
+h6.card-title:has(#netTrendYearLabel) i,
+h6.card-title:has(#budgetReportPeriodLabel) i,
+h6.card-title:has(#incomeCatPeriodLabel) i,
+h6.card-title:has(#expenseCatPeriodLabel) i {
+  margin-right: 8px;
 }
