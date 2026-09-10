@@ -1503,3 +1503,85 @@ renderDashboard();
 
   renderCategoryExtras();
 })();
+
+/* =========================================================================
+   ADDED: show DAYS (not weeks) in "Income vs Expenses by Month" and "Net
+   Cashflow Trend" once a specific Week is selected on the dashboard.
+
+   Purely additive — does not modify a single existing line, function, or
+   comment anywhere above. Instead of touching chartMonthly / chartNetTrend
+   directly (the latter lives inside another IIFE's private closure), this
+   looks the live chart instances up via Chart.js's own Chart.getChart()
+   registry (keyed by canvas element) and just updates their .data + calls
+   .update() — so it never creates a second chart on the same canvas and
+   never disturbs the existing chartMonthly variable that other code above
+   still reads.
+
+   When dashWeek === 'All' (or dashMonth === 'All') this block returns
+   immediately and leaves the existing weekly/yearly charts exactly as the
+   code above already renders them.
+   ========================================================================= */
+(function () {
+  const WEEKDAY_ABBR = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+  function daysInSelectedWeek(year, month, week) {
+    const monthIndex = MONTHS.indexOf(month);
+    if (monthIndex === -1) return [];
+    const totalDays = daysInMonth(year, monthIndex);
+    const startDay = (Number(week) - 1) * 7 + 1;
+    const endDay = Math.min(startDay + 6, totalDays);
+    const days = [];
+    for (let d = startDay; d <= endDay; d++) {
+      const dateObj = new Date(year, monthIndex, d);
+      days.push({ iso: toLocalISODate(dateObj), label: WEEKDAY_ABBR[dateObj.getDay()] + ' ' + d });
+    }
+    return days;
+  }
+
+  function renderDailyBreakdown() {
+    const year = Number(document.getElementById('dashYear').value);
+    const month = document.getElementById('dashMonth').value;
+    const week = document.getElementById('dashWeek').value;
+    if (week === 'All' || month === 'All') return;
+
+    const days = daysInSelectedWeek(year, month, week);
+    if (!days.length) return;
+
+    const labels = days.map(d => d.label);
+    const txnsByDay = days.map(d => getTransactions().filter(t => t.date === d.iso));
+    const incomeByDay = txnsByDay.map(list => list.filter(t => t.type === 'Income').reduce((s, t) => s + Number(t.amount || 0), 0));
+    const expenseByDay = txnsByDay.map(list => list.filter(t => t.type === 'Expense').reduce((s, t) => s + Number(t.amount || 0), 0));
+    const netByDay = incomeByDay.map((inc, i) => inc - expenseByDay[i]);
+
+    const monthlyTitleEl = document.getElementById('monthlyChartTitle');
+    if (monthlyTitleEl) monthlyTitleEl.textContent = `Daily Income vs Expenses — Week ${week}, ${month} ${year}`;
+    const monthlyChart = Chart.getChart(document.getElementById('chartMonthly'));
+    if (monthlyChart) {
+      monthlyChart.data.labels = labels;
+      monthlyChart.data.datasets[0].data = incomeByDay;
+      monthlyChart.data.datasets[1].data = expenseByDay;
+      monthlyChart.update();
+    }
+
+    const netTrendYearLabelEl = document.getElementById('netTrendYearLabel');
+    if (netTrendYearLabelEl) netTrendYearLabelEl.textContent = `Daily — Week ${week}, ${month} ${year}`;
+    const netChart = Chart.getChart(document.getElementById('chartNetTrend'));
+    if (netChart) {
+      netChart.data.labels = labels;
+      netChart.data.datasets[0].data = netByDay;
+      netChart.data.datasets[0].pointBackgroundColor = netByDay.map(v => v < 0 ? '#bf4632' : '#1f6f57');
+      netChart.update();
+    }
+  }
+
+  const _origRenderDashboardForDaily = render.dashboard;
+  render.dashboard = function () {
+    _origRenderDashboardForDaily();
+    renderDailyBreakdown();
+  };
+
+  ['dashYear', 'dashMonth', 'dashWeek'].forEach(id =>
+    document.getElementById(id).addEventListener('change', renderDailyBreakdown));
+
+  renderDailyBreakdown();
+})();
