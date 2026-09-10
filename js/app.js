@@ -2009,3 +2009,186 @@ function updateBudgetWeekly(id, checked) {
 
   renderBudgetReportPaceEnhanced();
 })();
+
+/* =========================================================================
+   ADDED: redefine week-of-month numbering as CALENDAR weeks (Monday to
+   Sunday) instead of fixed 7-day chunks from day 1. The first week of a
+   month is whatever partial days come before the month's first Monday
+   (e.g. August 2026 starts on a Wednesday, so Week 1 = Wed–Sun, Week 2 =
+   Mon–Sun, ...); if a month starts on a Monday, Week 1 is a full Mon–Sun
+   week. The last week is likewise whatever partial days remain after the
+   month's last Monday (e.g. September 2026's last week = Mon–Wed).
+
+   This reassigns the existing deriveWeekOfMonth() and weeksInMonthCount()
+   function bindings declared above — the same technique already used
+   elsewhere in this file (see the renderPayroll / renderBudget wraps).
+   Every other piece of code calls these two functions by name at run
+   time, so reassigning them here transparently fixes week numbering
+   everywhere they're already used (dashboard Year/Month/Week filters and
+   dropdown, transaction filtering by week, the Budget Performance
+   report's weekly-budget division, the stat sub-lines, etc.) without
+   editing a single one of those call sites. It does not modify a single
+   existing line, function, or comment above.
+   ========================================================================= */
+deriveWeekOfMonth = function (dateStr) {
+  const d = parseDate(dateStr); if (!d) return '';
+  const day = d.getDate();
+  let week = 1;
+  for (let dd = 2; dd <= day; dd++) {
+    if (new Date(d.getFullYear(), d.getMonth(), dd).getDay() === 1) week++;
+  }
+  return week;
+};
+
+weeksInMonthCount = function (year, monthName) {
+  const monthIndex = MONTHS.indexOf(monthName);
+  if (monthIndex === -1) return 0;
+  const total = daysInMonth(year, monthIndex);
+  let week = 1;
+  for (let dd = 2; dd <= total; dd++) {
+    if (new Date(year, monthIndex, dd).getDay() === 1) week++;
+  }
+  return week;
+};
+
+// Returns the actual start/end Date (inclusive) covered by a given
+// week-of-month number, under the calendar-week scheme above. Used by the
+// two blocks below to correct anything that still assumed fixed 7-day
+// weeks for display purposes.
+function calendarWeekRange(year, monthName, week) {
+  const monthIndex = MONTHS.indexOf(monthName);
+  if (monthIndex === -1) return null;
+  const total = daysInMonth(year, monthIndex);
+  let start = null, end = null;
+  for (let dd = 1; dd <= total; dd++) {
+    if (deriveWeekOfMonth(toLocalISODate(new Date(year, monthIndex, dd))) === Number(week)) {
+      if (start === null) start = dd;
+      end = dd;
+    }
+  }
+  if (start === null) return null;
+  return {
+    start: new Date(year, monthIndex, start),
+    end: new Date(year, monthIndex, end),
+    totalDaysInWeek: end - start + 1,
+  };
+}
+
+/* =========================================================================
+   ADDED: correct the "daily" breakdown drawn by the earlier "ADDED: show
+   DAYS (not weeks)..." block so its date range matches the new calendar
+   week definition above, instead of that block's own fixed 7-day-chunk
+   math. This does not edit that block — it re-reads the live chart
+   instances via Chart.getChart() (same technique that block already
+   uses) after render.dashboard finishes, and overwrites their labels/data
+   with the corrected calendar-week range. Purely additive.
+   ========================================================================= */
+(function () {
+  const WEEKDAY_ABBR = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+  function correctedDaysInSelectedWeek(year, month, week) {
+    const range = calendarWeekRange(year, month, week);
+    if (!range) return [];
+    const days = [];
+    for (let dt = new Date(range.start); dt <= range.end; dt.setDate(dt.getDate() + 1)) {
+      days.push({ iso: toLocalISODate(dt), label: WEEKDAY_ABBR[dt.getDay()] + ' ' + dt.getDate() });
+    }
+    return days;
+  }
+
+  function fixDailyCharts() {
+    const year = Number(document.getElementById('dashYear').value);
+    const month = document.getElementById('dashMonth').value;
+    const week = document.getElementById('dashWeek').value;
+    if (week === 'All' || month === 'All') return;
+
+    const days = correctedDaysInSelectedWeek(year, month, week);
+    if (!days.length) return;
+
+    const labels = days.map(d => d.label);
+    const txnsByDay = days.map(d => getTransactions().filter(t => t.date === d.iso));
+    const incomeByDay = txnsByDay.map(list => list.filter(t => t.type === 'Income').reduce((s, t) => s + Number(t.amount || 0), 0));
+    const expenseByDay = txnsByDay.map(list => list.filter(t => t.type === 'Expense').reduce((s, t) => s + Number(t.amount || 0), 0));
+    const netByDay = incomeByDay.map((inc, i) => inc - expenseByDay[i]);
+
+    const monthlyChart = Chart.getChart(document.getElementById('chartMonthly'));
+    if (monthlyChart) {
+      monthlyChart.data.labels = labels;
+      monthlyChart.data.datasets[0].data = incomeByDay;
+      monthlyChart.data.datasets[1].data = expenseByDay;
+      monthlyChart.update();
+    }
+
+    const netChart = Chart.getChart(document.getElementById('chartNetTrend'));
+    if (netChart) {
+      netChart.data.labels = labels;
+      netChart.data.datasets[0].data = netByDay;
+      netChart.data.datasets[0].pointBackgroundColor = netByDay.map(v => v < 0 ? '#bf4632' : '#1f6f57');
+      netChart.update();
+    }
+  }
+
+  const _origRenderDashboardForCalendarWeekCharts = render.dashboard;
+  render.dashboard = function () {
+    _origRenderDashboardForCalendarWeekCharts();
+    fixDailyCharts();
+  };
+
+  ['dashYear', 'dashMonth', 'dashWeek'].forEach(id =>
+    document.getElementById(id).addEventListener('change', fixDailyCharts));
+
+  fixDailyCharts();
+})();
+
+/* =========================================================================
+   ADDED: correct the Budget Performance report's weekly pace indicator
+   ("Day X of Y" + AHEAD OF PACE / ON PACE) so it uses the new calendar
+   week range above, instead of the earlier pace block's own fixed
+   7-day-chunk math. Runs after render.dashboard (which already includes
+   the pace block) and rewrites just the pace line's text/class in the
+   DOM — it does not edit the pace block itself. Purely additive.
+   ========================================================================= */
+(function () {
+  function fixPaceIndicator() {
+    const year = Number(document.getElementById('dashYear').value);
+    const month = document.getElementById('dashMonth').value;
+    const week = document.getElementById('dashWeek').value;
+    const paceEls = document.querySelectorAll('#budgetReportList .budget-rep-pace');
+    if (!paceEls.length) return;
+    if (week === 'All' || month === 'All') return;
+
+    const range = calendarWeekRange(year, month, week);
+    if (!range) return;
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    let elapsedDays;
+    if (today < range.start) elapsedDays = 0;
+    else if (today > range.end) elapsedDays = range.totalDaysInWeek;
+    else elapsedDays = Math.floor((today - range.start) / 86400000) + 1;
+    const paceRatio = range.totalDaysInWeek ? elapsedDays / range.totalDaysInWeek : 0;
+
+    paceEls.forEach(el => {
+      const dayLabelEl = el.querySelector('span:first-child');
+      const noteEl = el.querySelector('.budget-rep-pace-note');
+      if (dayLabelEl) dayLabelEl.textContent = `Day ${elapsedDays} of ${range.totalDaysInWeek}`;
+      if (!noteEl) return;
+      const row = el.closest('.budget-rep-row');
+      const pctEl = row ? row.querySelector('.budget-rep-row-bottom span:last-child') : null;
+      const usedPct = pctEl ? parseFloat(pctEl.textContent) / 100 : 0;
+      const aheadByMuch = usedPct - paceRatio >= 0.15;
+      noteEl.textContent = aheadByMuch ? 'AHEAD OF PACE' : 'ON PACE';
+      noteEl.classList.toggle('ahead', aheadByMuch);
+      noteEl.classList.toggle('ontrack', !aheadByMuch);
+    });
+  }
+
+  const _origRenderDashboardForPaceFix = render.dashboard;
+  render.dashboard = function () {
+    _origRenderDashboardForPaceFix();
+    fixPaceIndicator();
+  };
+
+  ['dashYear', 'dashMonth', 'dashWeek'].forEach(id =>
+    document.getElementById(id).addEventListener('change', fixPaceIndicator));
+
+  fixPaceIndicator();
+})();
