@@ -1,4 +1,4 @@
-index.html:
+index:
 <!DOCTYPE html>
 <html lang="en">
 
@@ -122,7 +122,7 @@ index.html:
         <div class="col-12">
           <div class="card h-100">
             <div class="card-body">
-              <h6 class="card-title"><i class="bi bi-clipboard-data"></i> Budget Performance (<span
+              <h6 class="card-title"><i class="bi bi-clipboard-data"></i> Budgeting (<span
                   id="budgetReportPeriodLabel"></span>)</h6>
               <div class="row g-2 mb-3" id="budgetReportSummary"></div>
               <div id="budgetReportList"></div>
@@ -135,7 +135,8 @@ index.html:
         <div class="col-12 col-lg-6">
           <div class="card h-100">
             <div class="card-body">
-              <h6 class="card-title"><i class="bi bi-pie-chart-fill"></i> Income by Category <span id="incomeCatPeriodLabel" class="text-muted small"></span></h6>
+              <h6 class="card-title"><i class="bi bi-pie-chart-fill"></i> Income by Category <span
+                  id="incomeCatPeriodLabel" class="text-muted small"></span></h6>
               <canvas id="chartIncomeCategory" height="200"></canvas>
               <div class="text-end fw-semibold mt-2" id="totalIncomeCategory">Total: 0</div>
             </div>
@@ -144,7 +145,8 @@ index.html:
         <div class="col-12 col-lg-6">
           <div class="card h-100">
             <div class="card-body">
-              <h6 class="card-title"><i class="bi bi-pie-chart"></i> Expenses by Category <span id="expenseCatPeriodLabel" class="text-muted small"></span></h6>
+              <h6 class="card-title"><i class="bi bi-pie-chart"></i> Expenses by Category <span
+                  id="expenseCatPeriodLabel" class="text-muted small"></span></h6>
               <canvas id="chartCategory" height="200"></canvas>
               <div class="text-end fw-semibold mt-2" id="totalExpenseCategory">Total: 0</div>
             </div>
@@ -168,7 +170,7 @@ index.html:
         <div class="col-12">
           <div class="card h-100">
             <div class="card-body">
-              <h6 class="card-title"><i class="bi bi-graph-up-arrow"></i> Net Cashflow Trend (<span
+              <h6 class="card-title"><i class="bi bi-graph-up-arrow"></i> Net Cash Flow Trend (<span
                   id="netTrendYearLabel"></span>)</h6>
               <canvas id="chartNetTrend" height="180"></canvas>
             </div>
@@ -352,6 +354,7 @@ index.html:
                 <tr>
                   <th>Category</th>
                   <th style="width:110px">Budget</th>
+                  <th>Weekly</th>
                   <th class="text-end">Actual</th>
                   <th class="text-end">Remaining</th>
                   <th class="text-end">Used %</th>
@@ -896,1025 +899,6 @@ index.html:
 </body>
 
 </html>
-
-style.css:
-@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500;600&display=swap');
-
-/* =========================================================================
-   DESIGN TOKENS — "Passbook" theme: a warm paper ledger reimagined as an app
-   ========================================================================= */
-:root {
-  /* surfaces */
-  --bg: #f1ead9;
-  --bg-pattern: #e9dfc8;
-  --surface: #fffdf9;
-  --surface-2: #f6efe1;
-  --line: #ddd0ac;
-  --line-soft: #e8ddc0;
-
-  /* ink */
-  --ink: #1c2621;
-  --ink-soft: #445048;
-  --muted: #7a7263;
-
-  /* brand */
-  --brand: #1f6f57;
-  --brand-dark: #123c30;
-  --brand-light: #dff0e7;
-  --accent: #cf8a34;
-  --accent-dark: #96601c;
-  --accent-light: #faead0;
-
-  /* semantic */
-  --income: #2f8f5e;
-  --income-bg: #e3f3e9;
-  --expense: #bf4632;
-  --expense-bg: #fbe7e1;
-  --watch: #a3752f;
-  --watch-bg: #fbf0da;
-  --info: #3f6fa8;
-  --info-bg: #e7eff8;
-
-  /* elevation */
-  --shadow-sm: 0 1px 2px rgba(28, 38, 33, .06), 0 1px 1px rgba(28, 38, 33, .04);
-  --shadow-md: 0 6px 18px -6px rgba(28, 38, 33, .18), 0 2px 6px rgba(28, 38, 33, .06);
-  --shadow-lg: 0 16px 40px -12px rgba(18, 60, 48, .28);
-
-  /* radii */
-  --r-sm: 10px;
-  --r-md: 16px;
-  --r-lg: 22px;
-  --r-pill: 999px;
-
-  /* type */
-  --font-display: 'Fraunces', Georgia, serif;
-  --font-body: 'Inter', -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  --font-mono: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
-}
-
-* {
-  box-sizing: border-box;
-}
-
-html {
-  scroll-behavior: smooth;
-}
-
-body {
-  background:
-    radial-gradient(circle at 1px 1px, var(--bg-pattern) 1px, transparent 0) 0 0/22px 22px,
-    var(--bg);
-  color: var(--ink);
-  font-family: var(--font-body);
-  padding-bottom: 92px;
-  -webkit-font-smoothing: antialiased;
-}
-
-::selection {
-  background: var(--brand);
-  color: #fff;
-}
-
-a {
-  color: var(--brand);
-}
-
-/* focus visibility */
-button:focus-visible,
-a:focus-visible,
-input:focus-visible,
-select:focus-visible,
-textarea:focus-visible {
-  outline: 2px solid var(--brand);
-  outline-offset: 2px;
-}
-
-/* =========================================================================
-   TOP BAR
-   ========================================================================= */
-.app-navbar {
-  background: linear-gradient(135deg, var(--brand-dark), var(--brand) 130%);
-  padding: 14px 0 16px;
-  box-shadow: var(--shadow-md);
-  position: relative;
-  overflow: hidden;
-}
-
-.app-navbar::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: -1px;
-  height: 10px;
-  background-image: radial-gradient(circle at 10px 0, transparent 9px, var(--bg) 10px);
-  background-size: 20px 10px;
-  background-repeat: repeat-x;
-}
-
-.app-navbar .navbar-brand {
-  font-family: var(--font-display);
-  font-weight: 600;
-  font-size: 1.3rem;
-  letter-spacing: .01em;
-  display: flex;
-  align-items: center;
-  gap: .5rem;
-}
-
-.app-navbar .navbar-brand i {
-  background: rgba(255, 255, 255, .14);
-  border: 1px solid rgba(255, 255, 255, .22);
-  width: 38px;
-  height: 38px;
-  border-radius: var(--r-sm);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.05rem;
-}
-
-.app-navbar .brand-eyebrow {
-  display: block;
-  font-size: .64rem;
-  letter-spacing: .14em;
-  text-transform: uppercase;
-  color: rgba(255, 255, 255, .62);
-  font-weight: 600;
-  margin-bottom: 1px;
-}
-
-#currencyLabel {
-  font-family: var(--font-mono);
-  font-size: .72rem;
-  letter-spacing: .06em;
-  background: rgba(255, 255, 255, .14);
-  border: 1px solid rgba(255, 255, 255, .22);
-  padding: 5px 11px;
-  border-radius: var(--r-pill);
-}
-
-/* =========================================================================
-   LAYOUT / SECTION HEADERS
-   ========================================================================= */
-.container-fluid {
-  padding-left: 14px;
-  padding-right: 14px;
-}
-
-.section-toolbar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 10px;
-  margin: 18px 0 14px;
-}
-
-.section-heading {
-  font-family: var(--font-display);
-  font-weight: 600;
-  font-size: 1.15rem;
-  color: var(--brand-dark);
-  margin: 0;
-  display: flex;
-  align-items: center;
-  gap: .5rem;
-}
-
-.section-heading .icon-badge {
-  width: 30px;
-  height: 30px;
-  border-radius: var(--r-sm);
-  background: var(--brand-light);
-  color: var(--brand-dark);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: .9rem;
-}
-
-.section-sub {
-  font-size: .74rem;
-  color: var(--muted);
-  text-transform: uppercase;
-  letter-spacing: .1em;
-  font-weight: 600;
-}
-
-/* pill filter / trigger buttons */
-.chip-btn {
-  border: 1px dashed var(--line);
-  background: var(--surface);
-  color: var(--ink-soft);
-  border-radius: var(--r-pill);
-  padding: 8px 16px;
-  font-size: .8rem;
-  font-weight: 600;
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  box-shadow: var(--shadow-sm);
-  transition: transform .12s ease, box-shadow .12s ease, border-color .12s ease;
-}
-
-.chip-btn i {
-  color: var(--brand);
-}
-
-.chip-btn:hover {
-  border-color: var(--brand);
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-md);
-  color: var(--ink);
-}
-
-.chip-btn:active {
-  transform: translateY(0);
-}
-
-.btn {
-  border-radius: var(--r-sm);
-  font-weight: 600;
-  font-size: .86rem;
-  padding: 9px 16px;
-  letter-spacing: .01em;
-}
-
-.btn-sm {
-  padding: 7px 13px;
-  font-size: .78rem;
-  border-radius: 9px;
-}
-
-.btn-primary {
-  background: var(--brand);
-  border-color: var(--brand);
-  box-shadow: var(--shadow-sm);
-}
-
-.btn-primary:hover,
-.btn-primary:focus {
-  background: var(--brand-dark);
-  border-color: var(--brand-dark);
-}
-
-.btn-outline-primary {
-  color: var(--brand);
-  border-color: var(--brand);
-}
-
-.btn-outline-primary:hover {
-  background: var(--brand);
-  border-color: var(--brand);
-}
-
-.btn-outline-secondary {
-  color: var(--ink-soft);
-  border-color: var(--line);
-}
-
-.btn-outline-secondary:hover {
-  background: var(--surface-2);
-  color: var(--ink);
-  border-color: var(--line);
-}
-
-.btn-outline-danger {
-  color: var(--expense);
-  border-color: var(--expense);
-}
-
-.btn-outline-danger:hover {
-  background: var(--expense);
-  border-color: var(--expense);
-}
-
-.btn-danger {
-  background: var(--expense);
-  border-color: var(--expense);
-}
-
-/* =========================================================================
-   STAT CARDS (dashboard)
-   ========================================================================= */
-.stat-card {
-  border: none;
-  border-radius: var(--r-md);
-  box-shadow: var(--shadow-sm);
-  background: var(--surface);
-  position: relative;
-  overflow: hidden;
-  border-left: 4px solid transparent;
-  transition: transform .15s ease, box-shadow .15s ease;
-}
-
-.stat-card:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
-}
-
-.stat-card .card-body {
-  padding: 14px 16px;
-}
-
-.stat-card .stat-icon {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  width: 30px;
-  height: 30px;
-  border-radius: 9px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: .85rem;
-  opacity: .9;
-}
-
-.stat-income {
-  border-left-color: var(--income);
-}
-
-.stat-income .stat-icon {
-  background: var(--income-bg);
-  color: var(--income);
-}
-
-.stat-expense {
-  border-left-color: var(--expense);
-}
-
-.stat-expense .stat-icon {
-  background: var(--expense-bg);
-  color: var(--expense);
-}
-
-.stat-net {
-  border-left-color: var(--brand);
-}
-
-.stat-net .stat-icon {
-  background: var(--brand-light);
-  color: var(--brand-dark);
-}
-
-.stat-savings {
-  border-left-color: var(--accent);
-}
-
-.stat-savings .stat-icon {
-  background: var(--accent-light);
-  color: var(--accent-dark);
-}
-
-.stat-label {
-  font-size: .66rem;
-  text-transform: uppercase;
-  letter-spacing: .09em;
-  color: var(--muted);
-  font-weight: 700;
-  padding-right: 34px;
-}
-
-.stat-value {
-  font-family: var(--font-mono);
-  font-size: 1.28rem;
-  font-weight: 600;
-  margin-top: 5px;
-  letter-spacing: -.01em;
-}
-
-.stat-income .stat-value {
-  color: var(--income);
-}
-
-.stat-expense .stat-value {
-  color: var(--expense);
-}
-
-.stat-net .stat-value {
-  color: var(--brand-dark);
-}
-
-.stat-savings .stat-value {
-  color: var(--accent-dark);
-}
-
-@media (max-width: 576px) {
-  .stat-card .card-body {
-    padding: 11px 10px;
-  }
-
-  .stat-card .stat-icon {
-    width: 24px;
-    height: 24px;
-    font-size: .72rem;
-    top: 9px;
-    right: 9px;
-  }
-
-  .stat-value {
-    font-size: .82rem;
-    word-break: break-word;
-  }
-
-  .stat-label {
-    padding-right: 22px;
-    font-size: .6rem;
-  }
-}
-
-/* =========================================================================
-   GENERIC CARD / PANEL
-   ========================================================================= */
-.card {
-  border-radius: var(--r-md);
-  border: 1px solid var(--line-soft);
-  box-shadow: var(--shadow-sm);
-  background: var(--surface);
-}
-
-.card .card-body {
-  padding: 18px;
-}
-
-.card-title {
-  font-family: var(--font-display);
-  font-weight: 600;
-  color: var(--brand-dark);
-  font-size: 1rem;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 14px;
-}
-
-.card-title::before {
-  content: "";
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--accent);
-  display: inline-block;
-}
-
-/* =========================================================================
-   PASSBOOK HERO (dashboard summary)
-   ========================================================================= */
-.passbook-hero {
-  background: linear-gradient(160deg, var(--brand-dark) 0%, var(--brand) 78%);
-  border-radius: var(--r-lg);
-  color: #fff;
-  padding: 20px 20px 16px;
-  margin-top: 16px;
-  position: relative;
-  box-shadow: var(--shadow-lg);
-  overflow: hidden;
-}
-
-.passbook-hero::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background-image: repeating-linear-gradient(115deg, rgba(255, 255, 255, .05) 0 2px, transparent 2px 26px);
-  pointer-events: none;
-}
-
-.passbook-hero .ph-eyebrow {
-  font-size: .68rem;
-  letter-spacing: .14em;
-  text-transform: uppercase;
-  color: rgba(255, 255, 255, .68);
-  font-weight: 700;
-}
-
-.passbook-hero .ph-net {
-  font-family: var(--font-display);
-  font-size: 2.1rem;
-  font-weight: 600;
-  line-height: 1.15;
-  margin: 2px 0 12px;
-}
-
-.passbook-hero .ph-stitch {
-  border-top: 1.5px dashed rgba(255, 255, 255, .35);
-  margin: 10px 0 12px;
-}
-
-.passbook-hero .ph-row {
-  display: flex;
-  justify-content: space-between;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
-.passbook-hero .ph-item {
-  font-size: .8rem;
-  color: rgba(255, 255, 255, .9);
-}
-
-.passbook-hero .ph-item b {
-  display: block;
-  font-family: var(--font-mono);
-  font-size: 1rem;
-}
-
-.passbook-hero .ph-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  display: inline-block;
-  margin-right: 6px;
-}
-
-/* =========================================================================
-   TABLES
-   ========================================================================= */
-.table-responsive {
-  max-height: 68vh;
-  border-radius: var(--r-md);
-}
-
-.table {
-  margin-bottom: 0;
-  font-size: .86rem;
-}
-
-.table thead th {
-  background: var(--surface-2);
-  color: var(--muted);
-  text-transform: uppercase;
-  font-size: .66rem;
-  letter-spacing: .08em;
-  font-weight: 700;
-  border-bottom: 1px solid var(--line-soft);
-  padding: 10px 12px;
-  position: sticky;
-  top: 0;
-  z-index: 1;
-}
-
-.table tbody td {
-  padding: 11px 12px;
-  border-bottom: 1px solid var(--line-soft);
-  vertical-align: middle;
-  color: var(--ink-soft);
-}
-
-.table tbody tr:last-child td {
-  border-bottom: none;
-}
-
-.table td.text-end,
-.table th.text-end {
-  font-family: var(--font-mono);
-}
-
-.row-clickable {
-  cursor: pointer;
-  transition: background .1s ease;
-}
-
-.row-clickable:hover {
-  background: var(--surface-2);
-}
-
-/* badges */
-.badge {
-  font-weight: 700;
-  font-size: .68rem;
-  letter-spacing: .02em;
-  padding: 5px 9px;
-  border-radius: 7px;
-}
-
-.badge-ok {
-  background: var(--income-bg);
-  color: var(--income);
-}
-
-.badge-watch {
-  background: var(--watch-bg);
-  color: var(--watch);
-}
-
-.badge-over {
-  background: var(--expense-bg);
-  color: var(--expense);
-}
-
-.badge-set {
-  background: var(--surface-2);
-  color: var(--muted);
-}
-
-/* progress bars */
-.progress {
-  background: var(--surface-2);
-  border-radius: var(--r-pill);
-  overflow: hidden;
-}
-
-.progress-bar {
-  background: var(--brand);
-  font-size: .64rem;
-  font-weight: 700;
-}
-
-.progress-bar.bg-success {
-  background: var(--income) !important;
-}
-
-/* pagination */
-.pagination .page-link {
-  border: 1px solid var(--line-soft);
-  color: var(--ink-soft);
-  border-radius: 8px;
-  margin: 0 3px;
-  font-size: .8rem;
-}
-
-.pagination .page-item.active .page-link {
-  background: var(--brand);
-  border-color: var(--brand);
-}
-
-/* =========================================================================
-   FORMS
-   ========================================================================= */
-.form-label {
-  font-size: .72rem;
-  font-weight: 700;
-  color: var(--ink-soft);
-  text-transform: uppercase;
-  letter-spacing: .04em;
-  margin-bottom: 4px;
-}
-
-.form-control,
-.form-select {
-  border-radius: var(--r-sm);
-  border: 1px solid var(--line);
-  padding: 9px 12px;
-  font-size: .88rem;
-  background: var(--surface);
-}
-
-.form-control:focus,
-.form-select:focus {
-  border-color: var(--brand);
-  box-shadow: 0 0 0 3px var(--brand-light);
-}
-
-.form-control-sm,
-.form-select-sm {
-  padding: 7px 10px;
-  font-size: .82rem;
-  border-radius: 8px;
-}
-
-/* =========================================================================
-   MODALS
-   ========================================================================= */
-.modal-content {
-  border-radius: var(--r-lg);
-  border: none;
-  box-shadow: var(--shadow-lg);
-  overflow: hidden;
-}
-
-.modal-header {
-  background: linear-gradient(135deg, var(--brand-dark), var(--brand) 140%);
-  color: #fff;
-  border-bottom: none;
-  padding: 16px 20px;
-}
-
-.modal-title {
-  font-family: var(--font-display);
-  font-weight: 600;
-  font-size: 1.08rem;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.modal-header .btn-close {
-  filter: invert(1) grayscale(1) brightness(2);
-  opacity: .85;
-}
-
-.modal-body {
-  padding: 18px 20px;
-}
-
-.modal-footer {
-  border-top: 1px solid var(--line-soft);
-  padding: 14px 20px;
-}
-
-.modal-body p.modal-lead {
-  color: var(--ink-soft);
-  font-size: .9rem;
-}
-
-/* settings menu rows used inside Settings page + inside modals */
-.menu-row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  width: 100%;
-  text-align: left;
-  background: var(--surface);
-  border: 1px solid var(--line-soft);
-  border-radius: var(--r-md);
-  padding: 13px 14px;
-  margin-bottom: 10px;
-  box-shadow: var(--shadow-sm);
-  transition: transform .12s ease, box-shadow .12s ease;
-}
-
-.menu-row:hover {
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-md);
-}
-
-.menu-row .menu-icon {
-  width: 38px;
-  height: 38px;
-  border-radius: 10px;
-  background: var(--brand-light);
-  color: var(--brand-dark);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  font-size: 1rem;
-}
-
-.menu-row.danger .menu-icon {
-  background: var(--expense-bg);
-  color: var(--expense);
-}
-
-.menu-row .menu-text {
-  flex: 1;
-  min-width: 0;
-}
-
-.menu-row .menu-title {
-  font-weight: 700;
-  font-size: .88rem;
-  color: var(--ink);
-}
-
-.menu-row .menu-sub {
-  font-size: .74rem;
-  color: var(--muted);
-}
-
-.menu-row .bi-chevron-right {
-  color: var(--muted);
-}
-
-/* =========================================================================
-   TOASTS
-   ========================================================================= */
-.toast-container {
-  z-index: 1200;
-}
-
-.toast {
-  border: none;
-  border-radius: var(--r-md);
-  box-shadow: var(--shadow-lg);
-}
-
-/* =========================================================================
-   BOTTOM NAV
-   ========================================================================= */
-.bottom-nav {
-  background: var(--surface);
-  border-top: 1px solid var(--line-soft);
-  padding: 6px 6px calc(6px + env(safe-area-inset-bottom));
-  box-shadow: 0 -6px 18px rgba(28, 38, 33, .06);
-}
-
-.nav-btn {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  font-size: .62rem;
-  font-weight: 600;
-  color: var(--muted);
-  border: none;
-  background: transparent;
-  padding: 6px 2px;
-  border-radius: 12px;
-}
-
-.nav-btn i {
-  font-size: 1.08rem;
-  width: 34px;
-  height: 26px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: var(--r-pill);
-  transition: background .15s ease, color .15s ease;
-}
-
-.nav-btn.active {
-  color: var(--brand-dark);
-}
-
-.nav-btn.active i {
-  background: var(--brand-light);
-  color: var(--brand);
-}
-
-/* =========================================================================
-   EMPTY / MISC
-   ========================================================================= */
-.text-muted {
-  color: var(--muted) !important;
-}
-
-.atome-card-icon {
-  width: 34px;
-  height: 34px;
-  border-radius: 9px;
-  background: var(--accent-light);
-  color: var(--accent-dark);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: .95rem;
-}
-
-@media (max-width: 576px) {
-  .container-fluid {
-    padding-left: 10px;
-    padding-right: 10px;
-  }
-
-  .card .card-body {
-    padding: 14px;
-  }
-
-  .passbook-hero .ph-net {
-    font-size: 1.7rem;
-  }
-}
-
-/* =========================================================================
-   ADDED: prevent iOS/Android auto-zoom when tapping inputs inside modals.
-   Mobile browsers (Safari/Chrome) automatically zoom the page in when a
-   focused input/select/textarea has a computed font-size under 16px.
-   Several existing rules above (.form-control, .form-select,
-   .form-control-sm, .form-select-sm) use font sizes below that threshold
-   on purpose for desktop density, so instead of changing those rules this
-   block only raises the effective size on small screens, purely additive
-   and does not modify a single line above.
-   ========================================================================= */
-@media (max-width: 576px) {
-
-  .form-control,
-  .form-select,
-  .form-control-sm,
-  .form-select-sm,
-  input,
-  select,
-  textarea {
-    font-size: 16px !important;
-  }
-}
-
-/* =========================================================================
-   ADDED: Budget Performance report (dashboard). Reuses existing tokens
-   and badge/progress classes already defined above; only new selectors
-   are introduced here, nothing existing is changed.
-   ========================================================================= */
-.budget-rep-stat {
-  background: var(--surface-2);
-  border-radius: var(--r-sm);
-  padding: 10px 12px;
-  text-align: center;
-}
-
-.budget-rep-stat-label {
-  font-size: .62rem;
-  text-transform: uppercase;
-  letter-spacing: .08em;
-  color: var(--muted);
-  font-weight: 700;
-}
-
-.budget-rep-stat-value {
-  font-family: var(--font-mono);
-  font-size: 1rem;
-  font-weight: 600;
-  color: var(--ink);
-  margin-top: 3px;
-}
-
-.budget-rep-row {
-  padding: 10px 0;
-  border-bottom: 1px solid var(--line-soft);
-}
-
-.budget-rep-row:last-child {
-  border-bottom: none;
-  padding-bottom: 0;
-}
-
-.budget-rep-row-top {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 6px;
-  font-size: .84rem;
-  font-weight: 600;
-  color: var(--ink);
-}
-
-.budget-rep-cat {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.budget-rep-row-bottom {
-  display: flex;
-  justify-content: space-between;
-  font-size: .74rem;
-  color: var(--muted);
-  margin-top: 5px;
-  font-family: var(--font-mono);
-}
-
-/* =========================================================================
-   ADDED: "Today" stat card colors and income/expense sub-line.
-   Purely additive — nothing above this block was changed.
-   ========================================================================= */
-.stat-today {
-  border-left-color: var(--info);
-}
-
-.stat-today .stat-icon {
-  background: var(--info-bg);
-  color: var(--info);
-}
-
-.stat-today .stat-value.positive {
-  color: var(--income);
-}
-
-.stat-today .stat-value.negative {
-  color: var(--expense);
-}
-
-.stat-today-sub {
-  display: flex;
-  justify-content: space-between;
-  gap: 8px;
-  margin-top: 6px;
-  font-family: var(--font-mono);
-  font-size: .68rem;
-  font-weight: 600;
-}
-
-.stat-today-sub .in {
-  color: var(--income);
-}
-
-.stat-today-sub .out {
-  color: var(--expense);
-}
-
-/* =========================================================================
-   ADDED: generic sub-line for Income/Expenses/Savings cards, so all 4
-   dashboard stat cards carry the same visual weight as the Today card.
-   Purely additive — nothing above this block was changed.
-   ========================================================================= */
-.stat-sub {
-  margin-top: 6px;
-  font-family: var(--font-mono);
-  font-size: .68rem;
-  font-weight: 600;
-  color: var(--muted);
-}
-
-.stat-sub.positive {
-  color: var(--income);
-}
-
-.stat-sub.negative {
-  color: var(--expense);
-}
 
 app.js:
 /* =========================================================================
@@ -3504,6 +2488,1736 @@ renderDashboard();
 
   renderDailyBreakdown();
 })();
+
+/* =========================================================================
+   ADDED: Weekly / Monthly checkbox column for the Budget tab. A budget row
+   checked here is a "Weekly" budget (recurring, meant to be spread across
+   the weeks of its month — e.g. Food); left unchecked it's a "Monthly"
+   budget (a whole-month amount that shouldn't be divided per week — e.g.
+   Subscription, Gym Membership). This flag is read by the Budget
+   Performance report on the dashboard to decide whether that category's
+   budgeted amount gets divided across weeks when a specific Week is
+   selected.
+
+   Purely additive: it does not modify a single existing line, function, or
+   comment above (including renderBudget itself). It wraps renderBudget the
+   same way the earlier "ADDED: Payroll — Holiday and Incentive columns"
+   block wraps renderPayroll, and it reuses the existing helper functions
+   (getBudget, set, LS_KEYS). It relies on the new "Weekly" <th> placed
+   right after the existing "Budget" <th> in the #budgetTable header in
+   index.html.
+   ========================================================================= */
+function updateBudgetWeekly(id, checked) {
+  const list = getBudget();
+  const row = list.find(r => r.id === id);
+  if (row) row.weekly = !!checked;
+  set(LS_KEYS.budget, list);
+  renderBudget();
+}
+(function () {
+  function currentBudgetRowsForWeeklyColumn() {
+    const year = Number(document.getElementById('budgetYear').value);
+    const month = document.getElementById('budgetMonth').value;
+    // renderBudget() (which already ran by the time this wrapper runs) has
+    // already auto-created a row for every expense category for this
+    // year/month, so filtering getBudget() here lines up 1-for-1, in the
+    // same order, with the rows renderBudget() just drew into the table.
+    return getBudget().filter(b => Number(b.year) === year && b.month === month);
+  }
+
+  function addBudgetWeeklyColumn() {
+    const bodyRows = Array.from(document.querySelectorAll('#budgetTable tbody tr'));
+    const dataRows = currentBudgetRowsForWeeklyColumn();
+    bodyRows.forEach((tr, i) => {
+      const r = dataRows[i];
+      if (!r) return;
+      // Guard against double-inserting if this ever runs twice on the same
+      // row (e.g. re-render race): remove any previously-added cell first.
+      tr.querySelectorAll('td[data-added="weekly"]').forEach(td => td.remove());
+      const tds = tr.querySelectorAll('td');
+      const budgetTd = tds[1]; // [Category, Budget input, Actual, Remaining, Used %, Status]
+      if (!budgetTd) return;
+      const weeklyTd = document.createElement('td');
+      weeklyTd.dataset.added = 'weekly';
+      weeklyTd.innerHTML = `<input type="checkbox" class="form-check-input" ${r.weekly ? 'checked' : ''} onchange="updateBudgetWeekly(${r.id}, this.checked)">`;
+      budgetTd.after(weeklyTd);
+    });
+  }
+
+  const _origRenderBudgetForWeeklyColumn = renderBudget;
+  renderBudget = function () {
+    _origRenderBudgetForWeeklyColumn();
+    addBudgetWeeklyColumn();
+  };
+  render.budget = renderBudget;
+
+  // FIXED-FOR-SAFETY: initBudgetFilters() bound its Year/Month 'change'
+  // listeners directly to the ORIGINAL renderBudget function reference
+  // before this wrapper existed, so those two listeners alone would still
+  // call the unwrapped version and drop this column. Adding our own
+  // listeners here (registered after theirs, so they fire after) keeps the
+  // column present no matter which path triggers a re-render.
+  ['budgetYear', 'budgetMonth'].forEach(id =>
+    document.getElementById(id).addEventListener('change', addBudgetWeeklyColumn));
+})();
+
+/* =========================================================================
+   ADDED: split the dashboard's Budget Performance report into "Weekly" and
+   "Monthly" groups, based on each budget category's new Weekly checkbox
+   (see the block above). Weekly-flagged categories keep the existing
+   behavior of dividing their monthly budgeted amount across the weeks of
+   the month once a specific Week is selected; Monthly-flagged categories
+   (e.g. a subscription, a one-time monthly payment) always keep their full
+   month's budgeted amount and full month's actual spend, regardless of
+   which Week is selected on the dashboard, since a whole-month amount
+   isn't meant to be spread across weeks.
+
+   Purely additive — it does not modify a single existing line, function,
+   or comment above, including the earlier "ADDED: Budget Performance
+   report (dashboard)" block; it simply runs after it (by wrapping the
+   render.dashboard function again) and overwrites #budgetReportSummary /
+   #budgetReportList with the corrected, grouped output. It reuses the
+   existing helper functions (getBudget, getTransactions, deriveYear,
+   deriveMonthName, deriveWeekOfMonth, weeksInMonthCount, sameText, fmt,
+   fmtPct) and the existing .budget-rep-* CSS classes, plus the new
+   .budget-rep-group-title class.
+   ========================================================================= */
+(function () {
+  function currentDashFiltersForBudgetSplit() {
+    return {
+      year: document.getElementById('dashYear').value,
+      month: document.getElementById('dashMonth').value,
+      week: document.getElementById('dashWeek').value,
+    };
+  }
+
+  function categoryActualForPeriodSplit(category, year, month, week) {
+    return getTransactions()
+      .filter(t => sameText(t.type, 'Expense') && sameText(t.category, category))
+      .filter(t => String(deriveYear(t.date)) === String(year))
+      .filter(t => month === 'All' || deriveMonthName(t.date) === month)
+      .filter(t => week === 'All' || String(deriveWeekOfMonth(t.date)) === String(week))
+      .reduce((s, t) => s + Number(t.amount || 0), 0);
+  }
+
+  function budgetedRowsForPeriodSplit(year, month) {
+    return getBudget().filter(b =>
+      String(b.year) === String(year) &&
+      Number(b.amount) > 0 &&
+      (month === 'All' || b.month === month));
+  }
+
+  function buildGroupItems(rows, year, month, week, weeklyFlag) {
+    const byCategory = {};
+    rows.filter(r => !!r.weekly === weeklyFlag).forEach(r => {
+      byCategory[r.category] = (byCategory[r.category] || 0) + Number(r.amount || 0);
+    });
+    // Only Weekly categories get divided across the weeks of the month once
+    // a specific Week is picked — same trigger the original block used.
+    if (weeklyFlag && week !== 'All' && month !== 'All') {
+      const weekCount = weeksInMonthCount(Number(year), month) || 1;
+      Object.keys(byCategory).forEach(cat => { byCategory[cat] = byCategory[cat] / weekCount; });
+    }
+    // Monthly categories ignore the Week filter entirely — their actual
+    // spend is always the whole month's, matching their whole-month budget.
+    const effectiveWeek = weeklyFlag ? week : 'All';
+    return Object.keys(byCategory).map(cat => {
+      const budgeted = byCategory[cat];
+      const actual = categoryActualForPeriodSplit(cat, year, month, effectiveWeek);
+      const remaining = budgeted - actual;
+      const used = budgeted > 0 ? actual / budgeted : 0;
+      let status = 'ON TRACK', cls = 'badge-ok';
+      if (remaining < 0) { status = 'OVER BUDGET'; cls = 'badge-over'; }
+      else if (used >= 0.8) { status = 'WATCH'; cls = 'badge-watch'; }
+      return { cat, budgeted, actual, remaining, used, status, cls };
+    }).sort((a, b) => b.used - a.used);
+  }
+
+  function renderGroupHtml(title, items) {
+    if (!items.length) return '';
+    const rowsHtml = items.map(it => `
+      <div class="budget-rep-row">
+        <div class="budget-rep-row-top">
+          <span class="budget-rep-cat">${it.cat}</span>
+          <span class="badge ${it.cls}">${it.status}</span>
+        </div>
+        <div class="progress" style="height:10px">
+          <div class="progress-bar ${it.remaining < 0 ? '' : 'bg-success'}" style="width:${Math.min(it.used * 100, 100).toFixed(0)}%;${it.remaining < 0 ? 'background:var(--expense);' : ''}"></div>
+        </div>
+        <div class="budget-rep-row-bottom">
+          <span>${fmt(it.actual)} of ${fmt(it.budgeted)}</span>
+          <span class="${it.remaining < 0 ? 'text-danger' : ''}">${fmtPct(it.used)}</span>
+        </div>
+      </div>`).join('');
+    return `<div class="budget-rep-group-title">${title}</div>${rowsHtml}`;
+  }
+
+  function renderBudgetReportSplit() {
+    const { year, month, week } = currentDashFiltersForBudgetSplit();
+    const listEl = document.getElementById('budgetReportList');
+    const summaryEl = document.getElementById('budgetReportSummary');
+    if (!listEl || !summaryEl) return;
+
+    const rows = budgetedRowsForPeriodSplit(year, month);
+    if (!rows.length) return; // leave the original "no budgeted categories yet" message as-is
+
+    const weeklyItems = buildGroupItems(rows, year, month, week, true);
+    const monthlyItems = buildGroupItems(rows, year, month, week, false);
+
+    listEl.innerHTML = renderGroupHtml('Weekly', weeklyItems) + renderGroupHtml('Monthly', monthlyItems);
+
+    let totalBudgeted = 0, totalActual = 0;
+    [...weeklyItems, ...monthlyItems].forEach(it => { totalBudgeted += it.budgeted; totalActual += it.actual; });
+    const totalRemaining = totalBudgeted - totalActual;
+    summaryEl.innerHTML = `
+      <div class="col-4">
+        <div class="budget-rep-stat">
+          <div class="budget-rep-stat-label">Budgeted</div>
+          <div class="budget-rep-stat-value">${fmt(totalBudgeted)}</div>
+        </div>
+      </div>
+      <div class="col-4">
+        <div class="budget-rep-stat">
+          <div class="budget-rep-stat-label">Spent</div>
+          <div class="budget-rep-stat-value ${totalRemaining < 0 ? 'text-danger' : ''}">${fmt(totalActual)}</div>
+        </div>
+      </div>
+      <div class="col-4">
+        <div class="budget-rep-stat">
+          <div class="budget-rep-stat-label">${totalRemaining < 0 ? 'Over by' : 'Remaining'}</div>
+          <div class="budget-rep-stat-value ${totalRemaining < 0 ? 'text-danger' : 'text-success'}">${fmt(Math.abs(totalRemaining))}</div>
+        </div>
+      </div>`;
+  }
+
+  const _origRenderDashboardForBudgetSplit = render.dashboard;
+  render.dashboard = function () {
+    _origRenderDashboardForBudgetSplit();
+    renderBudgetReportSplit();
+  };
+
+  ['dashYear', 'dashMonth', 'dashWeek'].forEach(id =>
+    document.getElementById(id).addEventListener('change', renderBudgetReportSplit));
+
+  renderBudgetReportSplit();
+})();
+
+/* =========================================================================
+   ADDED: pace indicator for Weekly categories, "days left" note for
+   Monthly categories, and per-group (Weekly / Monthly) subtotal rows in
+   the dashboard's Budget Performance report.
+
+   - Weekly categories: when a specific Week is selected, shows "Day X of
+     Y · used Z%" and flags "AHEAD OF PACE" if the % of the weekly budget
+     already spent is running meaningfully ahead of how much of that week
+     has elapsed (today's date vs. the week's date range) — a simple
+     early-warning signal distinct from the OVER BUDGET / WATCH status.
+   - Monthly categories: shows how many days are left in the selected
+     month (using today's real date), since a whole-month budget like a
+     subscription can look "fine" while actually being due soon.
+   - Adds a small subtotal line (Budgeted / Spent) under each of the
+     "Weekly" and "Monthly" headings, on top of the existing grand total.
+
+   Purely additive — it does not modify a single existing line, function,
+   or comment above, including the previous "ADDED: split the dashboard's
+   Budget Performance report into Weekly and Monthly groups" block; it
+   simply runs after it (by wrapping render.dashboard again) and
+   overwrites #budgetReportList with the enhanced output. It reuses the
+   existing helper functions/data (getBudget, getTransactions, deriveYear,
+   deriveMonthName, deriveWeekOfMonth, weeksInMonthCount, daysInMonth,
+   parseDate, toLocalISODate, MONTHS, sameText, fmt, fmtPct) and the
+   existing .budget-rep-* CSS classes, plus the new ones above.
+   ========================================================================= */
+(function () {
+  function currentDashFiltersForPaceBlock() {
+    return {
+      year: document.getElementById('dashYear').value,
+      month: document.getElementById('dashMonth').value,
+      week: document.getElementById('dashWeek').value,
+    };
+  }
+
+  function categoryActualForPeriodPace(category, year, month, week) {
+    return getTransactions()
+      .filter(t => sameText(t.type, 'Expense') && sameText(t.category, category))
+      .filter(t => String(deriveYear(t.date)) === String(year))
+      .filter(t => month === 'All' || deriveMonthName(t.date) === month)
+      .filter(t => week === 'All' || String(deriveWeekOfMonth(t.date)) === String(week))
+      .reduce((s, t) => s + Number(t.amount || 0), 0);
+  }
+
+  function budgetedRowsForPeriodPace(year, month) {
+    return getBudget().filter(b =>
+      String(b.year) === String(year) &&
+      Number(b.amount) > 0 &&
+      (month === 'All' || b.month === month));
+  }
+
+  function buildGroupItemsPace(rows, year, month, week, weeklyFlag) {
+    const byCategory = {};
+    rows.filter(r => !!r.weekly === weeklyFlag).forEach(r => {
+      byCategory[r.category] = (byCategory[r.category] || 0) + Number(r.amount || 0);
+    });
+    if (weeklyFlag && week !== 'All' && month !== 'All') {
+      const weekCount = weeksInMonthCount(Number(year), month) || 1;
+      Object.keys(byCategory).forEach(cat => { byCategory[cat] = byCategory[cat] / weekCount; });
+    }
+    const effectiveWeek = weeklyFlag ? week : 'All';
+    return Object.keys(byCategory).map(cat => {
+      const budgeted = byCategory[cat];
+      const actual = categoryActualForPeriodPace(cat, year, month, effectiveWeek);
+      const remaining = budgeted - actual;
+      const used = budgeted > 0 ? actual / budgeted : 0;
+      let status = 'ON TRACK', cls = 'badge-ok';
+      if (remaining < 0) { status = 'OVER BUDGET'; cls = 'badge-over'; }
+      else if (used >= 0.8) { status = 'WATCH'; cls = 'badge-watch'; }
+      return { cat, budgeted, actual, remaining, used, status, cls };
+    }).sort((a, b) => b.used - a.used);
+  }
+
+  // Date range (inclusive) covered by a given week-of-month, mirrors the
+  // same math already used elsewhere for the daily breakdown.
+  function selectedWeekRange(year, month, week) {
+    const monthIndex = MONTHS.indexOf(month);
+    if (monthIndex === -1) return null;
+    const totalDays = daysInMonth(year, monthIndex);
+    const startDay = (Number(week) - 1) * 7 + 1;
+    const endDay = Math.min(startDay + 6, totalDays);
+    return {
+      start: new Date(year, monthIndex, startDay),
+      end: new Date(year, monthIndex, endDay),
+      totalDaysInWeek: endDay - startDay + 1,
+    };
+  }
+
+  function weeklyPaceHtml(year, month, week) {
+    if (week === 'All' || month === 'All') return '';
+    const range = selectedWeekRange(Number(year), month, week);
+    if (!range) return '';
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    let elapsedDays;
+    if (today < range.start) elapsedDays = 0;
+    else if (today > range.end) elapsedDays = range.totalDaysInWeek;
+    else elapsedDays = Math.floor((today - range.start) / 86400000) + 1;
+    const paceRatio = range.totalDaysInWeek ? elapsedDays / range.totalDaysInWeek : 0;
+    return { elapsedDays, totalDaysInWeek: range.totalDaysInWeek, paceRatio };
+  }
+
+  function renderGroupHtmlPace(title, items, paceInfo) {
+    if (!items.length) return '';
+    let totalBudgeted = 0, totalActual = 0;
+    const rowsHtml = items.map(it => {
+      totalBudgeted += it.budgeted;
+      totalActual += it.actual;
+      let paceHtml = '';
+      if (paceInfo) {
+        const aheadByMuch = it.used - paceInfo.paceRatio >= 0.15; // spent noticeably faster than week has elapsed
+        const noteCls = aheadByMuch ? 'ahead' : 'ontrack';
+        const noteText = aheadByMuch ? 'AHEAD OF PACE' : 'ON PACE';
+        paceHtml = `<div class="budget-rep-pace">
+          <span>Day ${paceInfo.elapsedDays} of ${paceInfo.totalDaysInWeek}</span>
+          <span class="budget-rep-pace-note ${noteCls}">${noteText}</span>
+        </div>`;
+      }
+      return `
+      <div class="budget-rep-row">
+        <div class="budget-rep-row-top">
+          <span class="budget-rep-cat">${it.cat}</span>
+          <span class="badge ${it.cls}">${it.status}</span>
+        </div>
+        <div class="progress" style="height:10px">
+          <div class="progress-bar ${it.remaining < 0 ? '' : 'bg-success'}" style="width:${Math.min(it.used * 100, 100).toFixed(0)}%;${it.remaining < 0 ? 'background:var(--expense);' : ''}"></div>
+        </div>
+        <div class="budget-rep-row-bottom">
+          <span>${fmt(it.actual)} of ${fmt(it.budgeted)}</span>
+          <span class="${it.remaining < 0 ? 'text-danger' : ''}">${fmtPct(it.used)}</span>
+        </div>
+        ${paceHtml}
+      </div>`;
+    }).join('');
+    const subtotalHtml = `<div class="budget-rep-subtotal"><span>${title} subtotal</span><span>${fmt(totalActual)} of ${fmt(totalBudgeted)}</span></div>`;
+    return `<div class="budget-rep-group-title">${title}</div>${rowsHtml}${subtotalHtml}`;
+  }
+
+  function monthlyDaysLeftNote(year, month) {
+    const monthIndex = MONTHS.indexOf(month);
+    if (monthIndex === -1) return '';
+    const today = new Date();
+    if (Number(year) !== today.getFullYear() || monthIndex !== today.getMonth()) {
+      const target = new Date(Number(year), monthIndex, 1);
+      return target < today
+        ? '<div class="budget-rep-monthly-note">Month ended</div>'
+        : '<div class="budget-rep-monthly-note">Month hasn\'t started</div>';
+    }
+    const total = daysInMonth(today.getFullYear(), today.getMonth());
+    const left = total - today.getDate();
+    return `<div class="budget-rep-monthly-note">${left} day${left === 1 ? '' : 's'} left in ${month}</div>`;
+  }
+
+  function renderMonthlyGroupHtmlPace(title, items, year, month) {
+    if (!items.length) return '';
+    let totalBudgeted = 0, totalActual = 0;
+    const daysLeftNote = (month !== 'All') ? monthlyDaysLeftNote(year, month) : '';
+    const rowsHtml = items.map(it => {
+      totalBudgeted += it.budgeted;
+      totalActual += it.actual;
+      return `
+      <div class="budget-rep-row">
+        <div class="budget-rep-row-top">
+          <span class="budget-rep-cat">${it.cat}</span>
+          <span class="badge ${it.cls}">${it.status}</span>
+        </div>
+        <div class="progress" style="height:10px">
+          <div class="progress-bar ${it.remaining < 0 ? '' : 'bg-success'}" style="width:${Math.min(it.used * 100, 100).toFixed(0)}%;${it.remaining < 0 ? 'background:var(--expense);' : ''}"></div>
+        </div>
+        <div class="budget-rep-row-bottom">
+          <span>${fmt(it.actual)} of ${fmt(it.budgeted)}</span>
+          <span class="${it.remaining < 0 ? 'text-danger' : ''}">${fmtPct(it.used)}</span>
+        </div>
+        ${daysLeftNote}
+      </div>`;
+    }).join('');
+    const subtotalHtml = `<div class="budget-rep-subtotal"><span>${title} subtotal</span><span>${fmt(totalActual)} of ${fmt(totalBudgeted)}</span></div>`;
+    return `<div class="budget-rep-group-title">${title}</div>${rowsHtml}${subtotalHtml}`;
+  }
+
+  function renderBudgetReportPaceEnhanced() {
+    const { year, month, week } = currentDashFiltersForPaceBlock();
+    const listEl = document.getElementById('budgetReportList');
+    if (!listEl) return;
+
+    const rows = budgetedRowsForPeriodPace(year, month);
+    if (!rows.length) return; // leave the existing "no budgeted categories yet" message as-is
+
+    const weeklyItems = buildGroupItemsPace(rows, year, month, week, true);
+    const monthlyItems = buildGroupItemsPace(rows, year, month, week, false);
+    const paceInfo = weeklyPaceHtml(year, month, week);
+
+    listEl.innerHTML =
+      renderGroupHtmlPace('Weekly', weeklyItems, paceInfo) +
+      renderMonthlyGroupHtmlPace('Monthly', monthlyItems, year, month);
+    // Grand-total summary cards above the list are left exactly as the
+    // earlier split block already computes and renders them.
+  }
+
+  const _origRenderDashboardForPaceBlock = render.dashboard;
+  render.dashboard = function () {
+    _origRenderDashboardForPaceBlock();
+    renderBudgetReportPaceEnhanced();
+  };
+
+  ['dashYear', 'dashMonth', 'dashWeek'].forEach(id =>
+    document.getElementById(id).addEventListener('change', renderBudgetReportPaceEnhanced));
+
+  renderBudgetReportPaceEnhanced();
+})();
+
+/* =========================================================================
+   ADDED: redefine week-of-month numbering as CALENDAR weeks (Monday to
+   Sunday) instead of fixed 7-day chunks from day 1. The first week of a
+   month is whatever partial days come before the month's first Monday
+   (e.g. August 2026 starts on a Wednesday, so Week 1 = Wed–Sun, Week 2 =
+   Mon–Sun, ...); if a month starts on a Monday, Week 1 is a full Mon–Sun
+   week. The last week is likewise whatever partial days remain after the
+   month's last Monday (e.g. September 2026's last week = Mon–Wed).
+
+   This reassigns the existing deriveWeekOfMonth() and weeksInMonthCount()
+   function bindings declared above — the same technique already used
+   elsewhere in this file (see the renderPayroll / renderBudget wraps).
+   Every other piece of code calls these two functions by name at run
+   time, so reassigning them here transparently fixes week numbering
+   everywhere they're already used (dashboard Year/Month/Week filters and
+   dropdown, transaction filtering by week, the Budget Performance
+   report's weekly-budget division, the stat sub-lines, etc.) without
+   editing a single one of those call sites. It does not modify a single
+   existing line, function, or comment above.
+   ========================================================================= */
+deriveWeekOfMonth = function (dateStr) {
+  const d = parseDate(dateStr); if (!d) return '';
+  const day = d.getDate();
+  let week = 1;
+  for (let dd = 2; dd <= day; dd++) {
+    if (new Date(d.getFullYear(), d.getMonth(), dd).getDay() === 1) week++;
+  }
+  return week;
+};
+
+weeksInMonthCount = function (year, monthName) {
+  const monthIndex = MONTHS.indexOf(monthName);
+  if (monthIndex === -1) return 0;
+  const total = daysInMonth(year, monthIndex);
+  let week = 1;
+  for (let dd = 2; dd <= total; dd++) {
+    if (new Date(year, monthIndex, dd).getDay() === 1) week++;
+  }
+  return week;
+};
+
+// Returns the actual start/end Date (inclusive) covered by a given
+// week-of-month number, under the calendar-week scheme above. Used by the
+// two blocks below to correct anything that still assumed fixed 7-day
+// weeks for display purposes.
+function calendarWeekRange(year, monthName, week) {
+  const monthIndex = MONTHS.indexOf(monthName);
+  if (monthIndex === -1) return null;
+  const total = daysInMonth(year, monthIndex);
+  let start = null, end = null;
+  for (let dd = 1; dd <= total; dd++) {
+    if (deriveWeekOfMonth(toLocalISODate(new Date(year, monthIndex, dd))) === Number(week)) {
+      if (start === null) start = dd;
+      end = dd;
+    }
+  }
+  if (start === null) return null;
+  return {
+    start: new Date(year, monthIndex, start),
+    end: new Date(year, monthIndex, end),
+    totalDaysInWeek: end - start + 1,
+  };
+}
+
+/* =========================================================================
+   ADDED: correct the "daily" breakdown drawn by the earlier "ADDED: show
+   DAYS (not weeks)..." block so its date range matches the new calendar
+   week definition above, instead of that block's own fixed 7-day-chunk
+   math. This does not edit that block — it re-reads the live chart
+   instances via Chart.getChart() (same technique that block already
+   uses) after render.dashboard finishes, and overwrites their labels/data
+   with the corrected calendar-week range. Purely additive.
+   ========================================================================= */
+(function () {
+  const WEEKDAY_ABBR = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+  function correctedDaysInSelectedWeek(year, month, week) {
+    const range = calendarWeekRange(year, month, week);
+    if (!range) return [];
+    const days = [];
+    for (let dt = new Date(range.start); dt <= range.end; dt.setDate(dt.getDate() + 1)) {
+      days.push({ iso: toLocalISODate(dt), label: WEEKDAY_ABBR[dt.getDay()] + ' ' + dt.getDate() });
+    }
+    return days;
+  }
+
+  function fixDailyCharts() {
+    const year = Number(document.getElementById('dashYear').value);
+    const month = document.getElementById('dashMonth').value;
+    const week = document.getElementById('dashWeek').value;
+    if (week === 'All' || month === 'All') return;
+
+    const days = correctedDaysInSelectedWeek(year, month, week);
+    if (!days.length) return;
+
+    const labels = days.map(d => d.label);
+    const txnsByDay = days.map(d => getTransactions().filter(t => t.date === d.iso));
+    const incomeByDay = txnsByDay.map(list => list.filter(t => t.type === 'Income').reduce((s, t) => s + Number(t.amount || 0), 0));
+    const expenseByDay = txnsByDay.map(list => list.filter(t => t.type === 'Expense').reduce((s, t) => s + Number(t.amount || 0), 0));
+    const netByDay = incomeByDay.map((inc, i) => inc - expenseByDay[i]);
+
+    const monthlyChart = Chart.getChart(document.getElementById('chartMonthly'));
+    if (monthlyChart) {
+      monthlyChart.data.labels = labels;
+      monthlyChart.data.datasets[0].data = incomeByDay;
+      monthlyChart.data.datasets[1].data = expenseByDay;
+      monthlyChart.update();
+    }
+
+    const netChart = Chart.getChart(document.getElementById('chartNetTrend'));
+    if (netChart) {
+      netChart.data.labels = labels;
+      netChart.data.datasets[0].data = netByDay;
+      netChart.data.datasets[0].pointBackgroundColor = netByDay.map(v => v < 0 ? '#bf4632' : '#1f6f57');
+      netChart.update();
+    }
+  }
+
+  const _origRenderDashboardForCalendarWeekCharts = render.dashboard;
+  render.dashboard = function () {
+    _origRenderDashboardForCalendarWeekCharts();
+    fixDailyCharts();
+  };
+
+  ['dashYear', 'dashMonth', 'dashWeek'].forEach(id =>
+    document.getElementById(id).addEventListener('change', fixDailyCharts));
+
+  fixDailyCharts();
+})();
+
+/* =========================================================================
+   ADDED: correct the Budget Performance report's weekly pace indicator
+   ("Day X of Y" + AHEAD OF PACE / ON PACE) so it uses the new calendar
+   week range above, instead of the earlier pace block's own fixed
+   7-day-chunk math. Runs after render.dashboard (which already includes
+   the pace block) and rewrites just the pace line's text/class in the
+   DOM — it does not edit the pace block itself. Purely additive.
+   ========================================================================= */
+(function () {
+  function fixPaceIndicator() {
+    const year = Number(document.getElementById('dashYear').value);
+    const month = document.getElementById('dashMonth').value;
+    const week = document.getElementById('dashWeek').value;
+    const paceEls = document.querySelectorAll('#budgetReportList .budget-rep-pace');
+    if (!paceEls.length) return;
+    if (week === 'All' || month === 'All') return;
+
+    const range = calendarWeekRange(year, month, week);
+    if (!range) return;
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    let elapsedDays;
+    if (today < range.start) elapsedDays = 0;
+    else if (today > range.end) elapsedDays = range.totalDaysInWeek;
+    else elapsedDays = Math.floor((today - range.start) / 86400000) + 1;
+    const paceRatio = range.totalDaysInWeek ? elapsedDays / range.totalDaysInWeek : 0;
+
+    paceEls.forEach(el => {
+      const dayLabelEl = el.querySelector('span:first-child');
+      const noteEl = el.querySelector('.budget-rep-pace-note');
+      if (dayLabelEl) dayLabelEl.textContent = `Day ${elapsedDays} of ${range.totalDaysInWeek}`;
+      if (!noteEl) return;
+      const row = el.closest('.budget-rep-row');
+      const pctEl = row ? row.querySelector('.budget-rep-row-bottom span:last-child') : null;
+      const usedPct = pctEl ? parseFloat(pctEl.textContent) / 100 : 0;
+      const aheadByMuch = usedPct - paceRatio >= 0.15;
+      noteEl.textContent = aheadByMuch ? 'AHEAD OF PACE' : 'ON PACE';
+      noteEl.classList.toggle('ahead', aheadByMuch);
+      noteEl.classList.toggle('ontrack', !aheadByMuch);
+    });
+  }
+
+  const _origRenderDashboardForPaceFix = render.dashboard;
+  render.dashboard = function () {
+    _origRenderDashboardForPaceFix();
+    fixPaceIndicator();
+  };
+
+  ['dashYear', 'dashMonth', 'dashWeek'].forEach(id =>
+    document.getElementById(id).addEventListener('change', fixPaceIndicator));
+
+  fixPaceIndicator();
+})();
+
+style.css:
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500;600&display=swap');
+
+/* =========================================================================
+   DESIGN TOKENS — "Passbook" theme: a warm paper ledger reimagined as an app
+   ========================================================================= */
+:root {
+  /* surfaces */
+  --bg: #f1ead9;
+  --bg-pattern: #e9dfc8;
+  --surface: #fffdf9;
+  --surface-2: #f6efe1;
+  --line: #ddd0ac;
+  --line-soft: #e8ddc0;
+
+  /* ink */
+  --ink: #1c2621;
+  --ink-soft: #445048;
+  --muted: #7a7263;
+
+  /* brand */
+  --brand: #1f6f57;
+  --brand-dark: #123c30;
+  --brand-light: #dff0e7;
+  --accent: #cf8a34;
+  --accent-dark: #96601c;
+  --accent-light: #faead0;
+
+  /* semantic */
+  --income: #2f8f5e;
+  --income-bg: #e3f3e9;
+  --expense: #bf4632;
+  --expense-bg: #fbe7e1;
+  --watch: #a3752f;
+  --watch-bg: #fbf0da;
+  --info: #3f6fa8;
+  --info-bg: #e7eff8;
+
+  /* elevation */
+  --shadow-sm: 0 1px 2px rgba(28, 38, 33, .06), 0 1px 1px rgba(28, 38, 33, .04);
+  --shadow-md: 0 6px 18px -6px rgba(28, 38, 33, .18), 0 2px 6px rgba(28, 38, 33, .06);
+  --shadow-lg: 0 16px 40px -12px rgba(18, 60, 48, .28);
+
+  /* radii */
+  --r-sm: 10px;
+  --r-md: 16px;
+  --r-lg: 22px;
+  --r-pill: 999px;
+
+  /* type */
+  --font-display: 'Fraunces', Georgia, serif;
+  --font-body: 'Inter', -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background:
+    radial-gradient(circle at 1px 1px, var(--bg-pattern) 1px, transparent 0) 0 0/22px 22px,
+    var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+  padding-bottom: 92px;
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: var(--brand);
+  color: #fff;
+}
+
+a {
+  color: var(--brand);
+}
+
+/* focus visibility */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+/* =========================================================================
+   TOP BAR
+   ========================================================================= */
+.app-navbar {
+  background: linear-gradient(135deg, var(--brand-dark), var(--brand) 130%);
+  padding: 14px 0 16px;
+  box-shadow: var(--shadow-md);
+  position: relative;
+  overflow: hidden;
+}
+
+.app-navbar::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 10px;
+  background-image: radial-gradient(circle at 10px 0, transparent 9px, var(--bg) 10px);
+  background-size: 20px 10px;
+  background-repeat: repeat-x;
+}
+
+.app-navbar .navbar-brand {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 1.3rem;
+  letter-spacing: .01em;
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+}
+
+.app-navbar .navbar-brand i {
+  background: rgba(255, 255, 255, .14);
+  border: 1px solid rgba(255, 255, 255, .22);
+  width: 38px;
+  height: 38px;
+  border-radius: var(--r-sm);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.05rem;
+}
+
+.app-navbar .brand-eyebrow {
+  display: block;
+  font-size: .64rem;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, .62);
+  font-weight: 600;
+  margin-bottom: 1px;
+}
+
+#currencyLabel {
+  font-family: var(--font-mono);
+  font-size: .72rem;
+  letter-spacing: .06em;
+  background: rgba(255, 255, 255, .14);
+  border: 1px solid rgba(255, 255, 255, .22);
+  padding: 5px 11px;
+  border-radius: var(--r-pill);
+}
+
+/* =========================================================================
+   LAYOUT / SECTION HEADERS
+   ========================================================================= */
+.container-fluid {
+  padding-left: 14px;
+  padding-right: 14px;
+}
+
+.section-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin: 18px 0 14px;
+}
+
+.section-heading {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 1.15rem;
+  color: var(--brand-dark);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+}
+
+.section-heading .icon-badge {
+  width: 30px;
+  height: 30px;
+  border-radius: var(--r-sm);
+  background: var(--brand-light);
+  color: var(--brand-dark);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: .9rem;
+}
+
+.section-sub {
+  font-size: .74rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: .1em;
+  font-weight: 600;
+}
+
+/* pill filter / trigger buttons */
+.chip-btn {
+  border: 1px dashed var(--line);
+  background: var(--surface);
+  color: var(--ink-soft);
+  border-radius: var(--r-pill);
+  padding: 8px 16px;
+  font-size: .8rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  box-shadow: var(--shadow-sm);
+  transition: transform .12s ease, box-shadow .12s ease, border-color .12s ease;
+}
+
+.chip-btn i {
+  color: var(--brand);
+}
+
+.chip-btn:hover {
+  border-color: var(--brand);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+  color: var(--ink);
+}
+
+.chip-btn:active {
+  transform: translateY(0);
+}
+
+.btn {
+  border-radius: var(--r-sm);
+  font-weight: 600;
+  font-size: .86rem;
+  padding: 9px 16px;
+  letter-spacing: .01em;
+}
+
+.btn-sm {
+  padding: 7px 13px;
+  font-size: .78rem;
+  border-radius: 9px;
+}
+
+.btn-primary {
+  background: var(--brand);
+  border-color: var(--brand);
+  box-shadow: var(--shadow-sm);
+}
+
+.btn-primary:hover,
+.btn-primary:focus {
+  background: var(--brand-dark);
+  border-color: var(--brand-dark);
+}
+
+.btn-outline-primary {
+  color: var(--brand);
+  border-color: var(--brand);
+}
+
+.btn-outline-primary:hover {
+  background: var(--brand);
+  border-color: var(--brand);
+}
+
+.btn-outline-secondary {
+  color: var(--ink-soft);
+  border-color: var(--line);
+}
+
+.btn-outline-secondary:hover {
+  background: var(--surface-2);
+  color: var(--ink);
+  border-color: var(--line);
+}
+
+.btn-outline-danger {
+  color: var(--expense);
+  border-color: var(--expense);
+}
+
+.btn-outline-danger:hover {
+  background: var(--expense);
+  border-color: var(--expense);
+}
+
+.btn-danger {
+  background: var(--expense);
+  border-color: var(--expense);
+}
+
+/* =========================================================================
+   STAT CARDS (dashboard)
+   ========================================================================= */
+.stat-card {
+  border: none;
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow-sm);
+  background: var(--surface);
+  position: relative;
+  overflow: hidden;
+  border-left: 4px solid transparent;
+  transition: transform .15s ease, box-shadow .15s ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.stat-card .card-body {
+  padding: 14px 16px;
+}
+
+.stat-card .stat-icon {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: .85rem;
+  opacity: .9;
+}
+
+.stat-income {
+  border-left-color: var(--income);
+}
+
+.stat-income .stat-icon {
+  background: var(--income-bg);
+  color: var(--income);
+}
+
+.stat-expense {
+  border-left-color: var(--expense);
+}
+
+.stat-expense .stat-icon {
+  background: var(--expense-bg);
+  color: var(--expense);
+}
+
+.stat-net {
+  border-left-color: var(--brand);
+}
+
+.stat-net .stat-icon {
+  background: var(--brand-light);
+  color: var(--brand-dark);
+}
+
+.stat-savings {
+  border-left-color: var(--accent);
+}
+
+.stat-savings .stat-icon {
+  background: var(--accent-light);
+  color: var(--accent-dark);
+}
+
+.stat-label {
+  font-size: .66rem;
+  text-transform: uppercase;
+  letter-spacing: .09em;
+  color: var(--muted);
+  font-weight: 700;
+  padding-right: 34px;
+}
+
+.stat-value {
+  font-family: var(--font-mono);
+  font-size: 1.28rem;
+  font-weight: 600;
+  margin-top: 5px;
+  letter-spacing: -.01em;
+}
+
+.stat-income .stat-value {
+  color: var(--income);
+}
+
+.stat-expense .stat-value {
+  color: var(--expense);
+}
+
+.stat-net .stat-value {
+  color: var(--brand-dark);
+}
+
+.stat-savings .stat-value {
+  color: var(--accent-dark);
+}
+
+@media (max-width: 576px) {
+  .stat-card .card-body {
+    padding: 11px 10px;
+  }
+
+  .stat-card .stat-icon {
+    width: 24px;
+    height: 24px;
+    font-size: .72rem;
+    top: 9px;
+    right: 9px;
+  }
+
+  .stat-value {
+    font-size: .82rem;
+    word-break: break-word;
+  }
+
+  .stat-label {
+    padding-right: 22px;
+    font-size: .6rem;
+  }
+}
+
+/* =========================================================================
+   GENERIC CARD / PANEL
+   ========================================================================= */
+.card {
+  border-radius: var(--r-md);
+  border: 1px solid var(--line-soft);
+  box-shadow: var(--shadow-sm);
+  background: var(--surface);
+}
+
+.card .card-body {
+  padding: 18px;
+}
+
+.card-title {
+  font-family: var(--font-display);
+  font-weight: 600;
+  color: var(--brand-dark);
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+/* .card-title::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  display: inline-block;
+} */
+
+/* =========================================================================
+   PASSBOOK HERO (dashboard summary)
+   ========================================================================= */
+.passbook-hero {
+  background: linear-gradient(160deg, var(--brand-dark) 0%, var(--brand) 78%);
+  border-radius: var(--r-lg);
+  color: #fff;
+  padding: 20px 20px 16px;
+  margin-top: 16px;
+  position: relative;
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+}
+
+.passbook-hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: repeating-linear-gradient(115deg, rgba(255, 255, 255, .05) 0 2px, transparent 2px 26px);
+  pointer-events: none;
+}
+
+.passbook-hero .ph-eyebrow {
+  font-size: .68rem;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, .68);
+  font-weight: 700;
+}
+
+.passbook-hero .ph-net {
+  font-family: var(--font-display);
+  font-size: 2.1rem;
+  font-weight: 600;
+  line-height: 1.15;
+  margin: 2px 0 12px;
+}
+
+.passbook-hero .ph-stitch {
+  border-top: 1.5px dashed rgba(255, 255, 255, .35);
+  margin: 10px 0 12px;
+}
+
+.passbook-hero .ph-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.passbook-hero .ph-item {
+  font-size: .8rem;
+  color: rgba(255, 255, 255, .9);
+}
+
+.passbook-hero .ph-item b {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 1rem;
+}
+
+.passbook-hero .ph-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  display: inline-block;
+  margin-right: 6px;
+}
+
+/* =========================================================================
+   TABLES
+   ========================================================================= */
+.table-responsive {
+  max-height: 68vh;
+  border-radius: var(--r-md);
+}
+
+.table {
+  margin-bottom: 0;
+  font-size: .86rem;
+}
+
+.table thead th {
+  background: var(--surface-2);
+  color: var(--muted);
+  text-transform: uppercase;
+  font-size: .66rem;
+  letter-spacing: .08em;
+  font-weight: 700;
+  border-bottom: 1px solid var(--line-soft);
+  padding: 10px 12px;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.table tbody td {
+  padding: 11px 12px;
+  border-bottom: 1px solid var(--line-soft);
+  vertical-align: middle;
+  color: var(--ink-soft);
+}
+
+.table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.table td.text-end,
+.table th.text-end {
+  font-family: var(--font-mono);
+}
+
+.row-clickable {
+  cursor: pointer;
+  transition: background .1s ease;
+}
+
+.row-clickable:hover {
+  background: var(--surface-2);
+}
+
+/* badges */
+.badge {
+  font-weight: 700;
+  font-size: .68rem;
+  letter-spacing: .02em;
+  padding: 5px 9px;
+  border-radius: 7px;
+}
+
+.badge-ok {
+  background: var(--income-bg);
+  color: var(--income);
+}
+
+.badge-watch {
+  background: var(--watch-bg);
+  color: var(--watch);
+}
+
+.badge-over {
+  background: var(--expense-bg);
+  color: var(--expense);
+}
+
+.badge-set {
+  background: var(--surface-2);
+  color: var(--muted);
+}
+
+/* progress bars */
+.progress {
+  background: var(--surface-2);
+  border-radius: var(--r-pill);
+  overflow: hidden;
+}
+
+.progress-bar {
+  background: var(--brand);
+  font-size: .64rem;
+  font-weight: 700;
+}
+
+.progress-bar.bg-success {
+  background: var(--income) !important;
+}
+
+/* pagination */
+.pagination .page-link {
+  border: 1px solid var(--line-soft);
+  color: var(--ink-soft);
+  border-radius: 8px;
+  margin: 0 3px;
+  font-size: .8rem;
+}
+
+.pagination .page-item.active .page-link {
+  background: var(--brand);
+  border-color: var(--brand);
+}
+
+/* =========================================================================
+   FORMS
+   ========================================================================= */
+.form-label {
+  font-size: .72rem;
+  font-weight: 700;
+  color: var(--ink-soft);
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  margin-bottom: 4px;
+}
+
+.form-control,
+.form-select {
+  border-radius: var(--r-sm);
+  border: 1px solid var(--line);
+  padding: 9px 12px;
+  font-size: .88rem;
+  background: var(--surface);
+}
+
+.form-control:focus,
+.form-select:focus {
+  border-color: var(--brand);
+  box-shadow: 0 0 0 3px var(--brand-light);
+}
+
+.form-control-sm,
+.form-select-sm {
+  padding: 7px 10px;
+  font-size: .82rem;
+  border-radius: 8px;
+}
+
+/* =========================================================================
+   MODALS
+   ========================================================================= */
+.modal-content {
+  border-radius: var(--r-lg);
+  border: none;
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+}
+
+.modal-header {
+  background: linear-gradient(135deg, var(--brand-dark), var(--brand) 140%);
+  color: #fff;
+  border-bottom: none;
+  padding: 16px 20px;
+}
+
+.modal-title {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 1.08rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.modal-header .btn-close {
+  filter: invert(1) grayscale(1) brightness(2);
+  opacity: .85;
+}
+
+.modal-body {
+  padding: 18px 20px;
+}
+
+.modal-footer {
+  border-top: 1px solid var(--line-soft);
+  padding: 14px 20px;
+}
+
+.modal-body p.modal-lead {
+  color: var(--ink-soft);
+  font-size: .9rem;
+}
+
+/* settings menu rows used inside Settings page + inside modals */
+.menu-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  text-align: left;
+  background: var(--surface);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--r-md);
+  padding: 13px 14px;
+  margin-bottom: 10px;
+  box-shadow: var(--shadow-sm);
+  transition: transform .12s ease, box-shadow .12s ease;
+}
+
+.menu-row:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.menu-row .menu-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: var(--brand-light);
+  color: var(--brand-dark);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 1rem;
+}
+
+.menu-row.danger .menu-icon {
+  background: var(--expense-bg);
+  color: var(--expense);
+}
+
+.menu-row .menu-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.menu-row .menu-title {
+  font-weight: 700;
+  font-size: .88rem;
+  color: var(--ink);
+}
+
+.menu-row .menu-sub {
+  font-size: .74rem;
+  color: var(--muted);
+}
+
+.menu-row .bi-chevron-right {
+  color: var(--muted);
+}
+
+/* =========================================================================
+   TOASTS
+   ========================================================================= */
+.toast-container {
+  z-index: 1200;
+}
+
+.toast {
+  border: none;
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow-lg);
+}
+
+/* =========================================================================
+   BOTTOM NAV
+   ========================================================================= */
+.bottom-nav {
+  background: var(--surface);
+  border-top: 1px solid var(--line-soft);
+  padding: 6px 6px calc(6px + env(safe-area-inset-bottom));
+  box-shadow: 0 -6px 18px rgba(28, 38, 33, .06);
+}
+
+.nav-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  font-size: .62rem;
+  font-weight: 600;
+  color: var(--muted);
+  border: none;
+  background: transparent;
+  padding: 6px 2px;
+  border-radius: 12px;
+}
+
+.nav-btn i {
+  font-size: 1.08rem;
+  width: 34px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--r-pill);
+  transition: background .15s ease, color .15s ease;
+}
+
+.nav-btn.active {
+  color: var(--brand-dark);
+}
+
+.nav-btn.active i {
+  background: var(--brand-light);
+  color: var(--brand);
+}
+
+/* =========================================================================
+   EMPTY / MISC
+   ========================================================================= */
+.text-muted {
+  color: var(--muted) !important;
+}
+
+.atome-card-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  background: var(--accent-light);
+  color: var(--accent-dark);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: .95rem;
+}
+
+@media (max-width: 576px) {
+  .container-fluid {
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+
+  .card .card-body {
+    padding: 14px;
+  }
+
+  .passbook-hero .ph-net {
+    font-size: 1.7rem;
+  }
+}
+
+/* =========================================================================
+   ADDED: prevent iOS/Android auto-zoom when tapping inputs inside modals.
+   Mobile browsers (Safari/Chrome) automatically zoom the page in when a
+   focused input/select/textarea has a computed font-size under 16px.
+   Several existing rules above (.form-control, .form-select,
+   .form-control-sm, .form-select-sm) use font sizes below that threshold
+   on purpose for desktop density, so instead of changing those rules this
+   block only raises the effective size on small screens, purely additive
+   and does not modify a single line above.
+   ========================================================================= */
+@media (max-width: 576px) {
+
+  .form-control,
+  .form-select,
+  .form-control-sm,
+  .form-select-sm,
+  input,
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
+
+/* =========================================================================
+   ADDED: Budget Performance report (dashboard). Reuses existing tokens
+   and badge/progress classes already defined above; only new selectors
+   are introduced here, nothing existing is changed.
+   ========================================================================= */
+.budget-rep-stat {
+  background: var(--surface-2);
+  border-radius: var(--r-sm);
+  padding: 10px 12px;
+  text-align: center;
+}
+
+.budget-rep-stat-label {
+  font-size: .62rem;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.budget-rep-stat-value {
+  font-family: var(--font-mono);
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--ink);
+  margin-top: 3px;
+}
+
+.budget-rep-row {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.budget-rep-row:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.budget-rep-row-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+  font-size: .84rem;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.budget-rep-cat {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.budget-rep-row-bottom {
+  display: flex;
+  justify-content: space-between;
+  font-size: .74rem;
+  color: var(--muted);
+  margin-top: 5px;
+  font-family: var(--font-mono);
+}
+
+/* =========================================================================
+   ADDED: "Today" stat card colors and income/expense sub-line.
+   Purely additive — nothing above this block was changed.
+   ========================================================================= */
+.stat-today {
+  border-left-color: var(--info);
+}
+
+.stat-today .stat-icon {
+  background: var(--info-bg);
+  color: var(--info);
+}
+
+.stat-today .stat-value.positive {
+  color: var(--income);
+}
+
+.stat-today .stat-value.negative {
+  color: var(--expense);
+}
+
+.stat-today-sub {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 6px;
+  font-family: var(--font-mono);
+  font-size: .68rem;
+  font-weight: 600;
+}
+
+.stat-today-sub .in {
+  color: var(--income);
+}
+
+.stat-today-sub .out {
+  color: var(--expense);
+}
+
+/* =========================================================================
+   ADDED: generic sub-line for Income/Expenses/Savings cards, so all 4
+   dashboard stat cards carry the same visual weight as the Today card.
+   Purely additive — nothing above this block was changed.
+   ========================================================================= */
+.stat-sub {
+  margin-top: 6px;
+  font-family: var(--font-mono);
+  font-size: .68rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.stat-sub.positive {
+  color: var(--income);
+}
+
+.stat-sub.negative {
+  color: var(--expense);
+}
+
+/* =========================================================================
+   ADDED: Weekly / Monthly checkbox column (Budget tab) and Weekly/Monthly
+   group headers inside the dashboard's Budget Performance report list.
+   Purely additive — reuses existing tokens and .budget-rep-row styling
+   already defined above; only new selectors are introduced here, nothing
+   existing is changed.
+   ========================================================================= */
+#budgetTable td[data-added="weekly"] {
+  text-align: center;
+}
+
+#budgetTable td[data-added="weekly"] input[type="checkbox"] {
+  width: 1.1em;
+  height: 1.1em;
+  cursor: pointer;
+}
+
+.budget-rep-group-title {
+  font-size: .66rem;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  font-weight: 700;
+  color: var(--muted);
+  margin: 14px 0 6px;
+}
+
+.budget-rep-group-title:first-child {
+  margin-top: 0;
+}
+
+/* =========================================================================
+   ADDED: pace indicator (Weekly categories), days-left note (Monthly
+   categories), and per-group subtotal rows in the Budget Performance
+   report. Purely additive — reuses existing tokens; only new selectors
+   are introduced here, nothing existing is changed.
+   ========================================================================= */
+.budget-rep-pace {
+  font-size: .7rem;
+  margin-top: 4px;
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.budget-rep-pace-note {
+  font-weight: 700;
+}
+
+.budget-rep-pace-note.ahead {
+  color: var(--expense);
+}
+
+.budget-rep-pace-note.ontrack {
+  color: var(--income);
+}
+
+.budget-rep-monthly-note {
+  font-size: .7rem;
+  color: var(--muted);
+  margin-top: 4px;
+}
+
+.budget-rep-subtotal {
+  display: flex;
+  justify-content: space-between;
+  font-size: .72rem;
+  font-weight: 700;
+  color: var(--ink-soft);
+  padding: 6px 0 10px;
+  border-bottom: 1px dashed var(--line-soft);
+  margin-bottom: 6px;
+  font-family: var(--font-mono);
+}
+
+.budget-rep-subtotal:last-of-type {
+  border-bottom: none;
+}
+
+/* =========================================================================
+   ADDED: fix "justified" look on mobile for card-title headers that mix
+   plain text with an embedded <span> (e.g. "Net Cashflow Trend (
+   <span>...</span>)"). Because .card-title is display:flex, these text
+   fragments and the span become separate flex items and can drift apart
+   on narrow screens, pushing the trailing ")" far to the right. This
+   switches just those specific headers to normal block text flow so they
+   wrap together as one left-aligned sentence, leaving .card-title's flex
+   layout untouched everywhere else (plain single-line titles still use it
+   normally). Purely additive — nothing above this block is changed.
+   ========================================================================= */
+h6.card-title:has(#netTrendYearLabel),
+h6.card-title:has(#budgetReportPeriodLabel),
+h6.card-title:has(#incomeCatPeriodLabel),
+h6.card-title:has(#expenseCatPeriodLabel) {
+  display: block;
+  text-align: left;
+}
+
+h6.card-title:has(#netTrendYearLabel) i,
+h6.card-title:has(#budgetReportPeriodLabel) i,
+h6.card-title:has(#incomeCatPeriodLabel) i,
+h6.card-title:has(#expenseCatPeriodLabel) i {
+  margin-right: 8px;
+}
 
 seed-data.js:
 // Auto-generated from My_Tracker.xlsx — this is your existing data, loaded once into localStorage on first run.

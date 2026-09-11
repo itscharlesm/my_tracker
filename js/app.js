@@ -2192,3 +2192,98 @@ function calendarWeekRange(year, monthName, week) {
 
   fixPaceIndicator();
 })();
+
+/* =========================================================================
+   ADDED: category breakdown in the tooltip for "Income vs Expenses"
+   (chartMonthly), for hover (PC) or tap (mobile) on any bar — whether the
+   chart is currently showing the whole year by month, the weekly-within-
+   month view, or the daily breakdown within a specific selected week
+   (calendar-week aligned). Shows each category's total for that exact
+   bar's type (Income or Expense), then the grand total below.
+
+   Purely additive — it does not modify a single existing line, function,
+   or comment above. It reuses the existing helper functions/data (MONTHS,
+   deriveYear, deriveMonthName, deriveWeekOfMonth, calendarWeekRange,
+   toLocalISODate, getTransactions, fmt).
+
+   FIXED (2nd revision): the first revision derived the bar's type from
+   item.dataset.label ('Income' / 'Expenses' — plural, never matching
+   t.type's 'Expense'), so it never found any transactions. That was
+   corrected to use item.datasetIndex, but the SECOND revision then
+   crashed with "Maximum call stack size exceeded" (and a follow-on
+   Chart.js internal TypeError) — that crash came from a different bug:
+   it patched the *already-created* chartMonthly instance directly via
+   `chart.options.plugins.tooltip.callbacks.afterBody = ...` followed by
+   `chart.update()`. In Chart.js v4, a chart's `.options` after creation
+   is a resolved/proxied object (it supports scriptable & per-index
+   options internally) — writing into a nested plugin path on that live,
+   resolved object is unsafe and corrupted its internal resolver, which is
+   what blew the call stack the moment the tooltip tried to render.
+
+   This revision fixes it at the root: instead of touching any chart
+   instance after the fact, it registers the callback once on
+   `Chart.defaults` — the same officially-supported mechanism Chart.js
+   itself recommends for configuring tooltip behavior (a plain, non-proxied
+   object) — before any chart reads it. Every time renderDashboard()
+   destroys and recreates chartMonthly (existing code above, untouched),
+   the new instance simply picks up this default automatically, with no
+   post-hoc mutation and no chart.update() call needed at all. The
+   callback checks the canvas id so it only ever adds this breakdown to
+   chartMonthly's tooltip — chartCategory, chartIncomeCategory, and
+   chartNetTrend are completely unaffected.
+   ========================================================================= */
+(function () {
+  // Figures out which transactions belong to a given bar on chartMonthly,
+  // mirroring the exact same logic the chart-drawing code above (plus the
+  // calendar-week daily-breakdown fix block) already uses to decide what
+  // each bar represents: a whole month (week === 'All'), a week-of-month,
+  // or one specific day within the selected calendar week.
+  function transactionsForMonthlyBarIndex(dataIndex) {
+    const year = Number(document.getElementById('dashYear').value);
+    const month = document.getElementById('dashMonth').value;
+    const week = document.getElementById('dashWeek').value;
+
+    if (week === 'All') {
+      const monthName = MONTHS[dataIndex];
+      return getTransactions().filter(t =>
+        String(deriveYear(t.date)) === String(year) && deriveMonthName(t.date) === monthName);
+    }
+
+    // week !== 'All' only happens when a specific Month is also selected
+    // (see populateDashWeekOptions), so `month` is a real month name here.
+    // At this point the chart has already been switched to the daily view
+    // by the calendar-week fix block above, so each bar = one specific day
+    // within the selected calendar week.
+    const range = calendarWeekRange(year, month, week);
+    if (!range) return [];
+    const date = new Date(range.start);
+    date.setDate(date.getDate() + dataIndex);
+    const iso = toLocalISODate(date);
+    return getTransactions().filter(t => t.date === iso);
+  }
+
+  // Registered once on Chart.defaults (a plain object Chart.js exposes
+  // specifically for this kind of global configuration), NOT on any live
+  // chart instance — see the note above for why that distinction matters.
+  Chart.defaults.plugins.tooltip.callbacks.afterBody = function (tooltipItems) {
+    if (!tooltipItems || !tooltipItems.length) return [];
+    const item = tooltipItems[0];
+
+    // Scope this purely to chartMonthly so every other chart's tooltip
+    // (chartCategory, chartIncomeCategory, chartNetTrend) is untouched.
+    if (!item.chart || !item.chart.canvas || item.chart.canvas.id !== 'chartMonthly') return [];
+
+    // datasetIndex 0 = Income, 1 = Expense — matches the dataset order
+    // chartMonthly is built with above ({label:'Income',...},{label:'Expenses',...}).
+    const type = item.datasetIndex === 0 ? 'Income' : 'Expense';
+    const txns = transactionsForMonthlyBarIndex(item.dataIndex).filter(t => t.type === type);
+    if (!txns.length) return [];
+
+    const byCat = {};
+    txns.forEach(t => { byCat[t.category] = (byCat[t.category] || 0) + Number(t.amount || 0); });
+    const cats = Object.keys(byCat).sort((a, b) => byCat[b] - byCat[a]);
+    const total = cats.reduce((s, c) => s + byCat[c], 0);
+
+    return [''].concat(cats.map(c => `${c}: ${fmt(byCat[c])}`)).concat();
+  };
+})();
