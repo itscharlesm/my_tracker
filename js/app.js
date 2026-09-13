@@ -2287,3 +2287,65 @@ function calendarWeekRange(year, monthName, week) {
     return [''].concat(cats.map(c => `${c}: ${fmt(byCat[c])}`)).concat();
   };
 })();
+
+/* =========================================================================
+   ADDED: display the Payroll table with the most recent Pay Date at the
+   top and the oldest at the bottom (newest-first), instead of the
+   oldest-first order renderPayroll() sorts internally for its own
+   calculations. Purely additive — it does not modify a single existing
+   line, function, or comment above (including renderPayroll itself, or
+   the earlier "ADDED: Payroll — Holiday and Incentive columns" wrap,
+   which by the time this runs has already painted every row/cell exactly
+   as before). This simply reverses the finished <tr> elements in the DOM
+   afterward, so every cell's contents (including the Holiday/Incentive
+   columns added above) stay correct — only their on-screen order changes.
+   ========================================================================= */
+(function () {
+  const _origRenderPayrollForOrder = renderPayroll;
+  renderPayroll = function () {
+    _origRenderPayrollForOrder();
+    const tbody = document.querySelector('#payrollTable tbody');
+    if (!tbody) return;
+    const rows = Array.from(tbody.children);
+    // Leave the empty-state ("No pay dates yet.") placeholder row alone —
+    // reversing a single row would be a no-op anyway, but this also skips
+    // touching it if the row shape ever changes.
+    if (rows.length === 1 && rows[0].querySelector('td[colspan]')) return;
+    rows.reverse().forEach(r => tbody.appendChild(r));
+  };
+  render.payroll = renderPayroll;
+})();
+
+/* =========================================================================
+   ADDED: search bar for the Transfers filter modal, mirroring the same
+   free-text search already available on the Entries (Transactions) page.
+   Reuses getTransfers, deriveYear, deriveMonthName, and the existing
+   transferFilterYear / transferFilterMonth filters. Purely additive — it
+   does not modify a single existing line, function, or comment above.
+
+   filteredTransfers() is reassigned here the same way deriveWeekOfMonth()
+   and weeksInMonthCount() are reassigned further up this file: the only
+   existing call site (renderTransfers) calls it by name at run time, so
+   swapping the binding here transparently adds search filtering without
+   touching renderTransfers or the original filteredTransfers definition.
+
+   Requires the new #transferSearch input added to the transferFilterModal
+   in index.html, right after the existing Month select (mirroring
+   #txnSearch in the Entries filter modal).
+   ========================================================================= */
+(function () {
+  filteredTransfers = function () {
+    const year = document.getElementById('transferFilterYear').value;
+    const month = document.getElementById('transferFilterMonth').value;
+    const searchEl = document.getElementById('transferSearch');
+    const q = searchEl ? searchEl.value.trim().toLowerCase() : '';
+    return getTransfers()
+      .filter(t => year === 'All' || String(deriveYear(t.date)) === String(year))
+      .filter(t => month === 'All' || deriveMonthName(t.date) === month)
+      .filter(t => !q || [t.transferType, t.fromAccount, t.toAccount, t.note].join(' ').toLowerCase().includes(q))
+      .sort((a, b) => b.date.localeCompare(a.date) || b.id - a.id);
+  };
+
+  const searchEl = document.getElementById('transferSearch');
+  if (searchEl) searchEl.addEventListener('input', renderTransfers);
+})();
